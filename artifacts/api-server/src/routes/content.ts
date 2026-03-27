@@ -77,9 +77,16 @@ router.get("/music", async (req, res) => {
 });
 
 router.post("/music", async (req, res) => {
-  const { title, artist, url, fileUrl, addedBy } = req.body;
-  if (!title || !artist) return res.status(400).json({ error: "Title and artist required" });
-  const [track] = await db.insert(musicTable).values({ title, artist, url: url || null, fileUrl: fileUrl || null, addedBy }).returning();
+  const { title, artist, url, fileUrl, genre, addedBy } = req.body;
+  if (!title) return res.status(400).json({ error: "Title is required" });
+  const [track] = await db.insert(musicTable).values({
+    title,
+    artist: artist || null,
+    url: url || null,
+    fileUrl: fileUrl || null,
+    genre: genre || null,
+    addedBy: addedBy || null,
+  }).returning();
   return res.json(track);
 });
 

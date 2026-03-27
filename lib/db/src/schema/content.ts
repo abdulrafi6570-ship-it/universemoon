@@ -33,9 +33,10 @@ export const linksTable = pgTable("um_links", {
 export const musicTable = pgTable("um_music", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  artist: text("artist").notNull(),
+  artist: text("artist"),
   url: text("url"),
   fileUrl: text("file_url"),
+  genre: text("genre"),
   addedBy: text("added_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
