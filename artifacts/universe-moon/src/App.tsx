@@ -37,7 +37,6 @@ import Profile from "@/pages/Profile";
 import Birthday from "@/pages/Birthday";
 import Rules from "@/pages/Rules";
 import Activity from "@/pages/Activity";
-import Story from "@/pages/Story";
 import Shoutout from "@/pages/Shoutout";
 import Moodboard from "@/pages/Moodboard";
 import Capsule from "@/pages/Capsule";
@@ -152,9 +151,6 @@ function Router() {
       </Route>
       <Route path="/activity">
         <Layout><Activity /></Layout>
-      </Route>
-      <Route path="/story">
-        <Layout><Story /></Layout>
       </Route>
       <Route path="/shoutout">
         <Layout><Shoutout /></Layout>

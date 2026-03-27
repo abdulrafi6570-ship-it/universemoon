@@ -26,7 +26,6 @@ const NAV_ITEMS = [
   { label: 'Chat', href: '/chat', icon: MessageCircle },
   { label: 'NGL / Pesan', href: '/ngl', icon: Ghost },
   { label: 'Shoutout Board', href: '/shoutout', icon: Megaphone },
-  { label: 'Story Harian', href: '/story', icon: BookOpen },
   { label: 'Moodboard', href: '/moodboard', icon: SmilePlus },
   { label: 'Q&A Anonim', href: '/qa', icon: HelpCircle },
   { label: 'Voting & Poll', href: '/voting', icon: CheckSquare },

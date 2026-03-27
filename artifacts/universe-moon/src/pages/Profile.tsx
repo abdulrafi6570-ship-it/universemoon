@@ -182,16 +182,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Active Story */}
-      {profile.activeStory && (
-        <div className="glass rounded-2xl p-5 mb-6">
-          <h2 className="font-bold mb-3 flex items-center gap-2">📖 Story Aktif</h2>
-          <div className="glass rounded-xl p-4">
-            <p className="text-sm">{profile.activeStory.emoji} {profile.activeStory.content}</p>
-            <p className="text-xs text-muted-foreground mt-2">Kedaluwarsa: {new Date(profile.activeStory.expiresAt).toLocaleString('id-ID')}</p>
-          </div>
-        </div>
-      )}
 
       {/* Shoutouts Received */}
       {profile.shoutoutsReceived?.length > 0 && (

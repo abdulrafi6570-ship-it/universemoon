@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Users, MessageCircle, Image, BookOpen, Music, PenSquare, SmilePlus, BookMarked, Megaphone, Clock } from 'lucide-react';
+import { Users, MessageCircle, Image, Music, PenSquare, SmilePlus, BookMarked, Megaphone, Clock } from 'lucide-react';
 
 export default function Stats() {
   const { data: stats, isLoading } = useQuery({
@@ -22,7 +22,6 @@ export default function Stats() {
     { label: 'Koleksi Musik', value: stats?.songs || 0, icon: Music, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
     { label: 'Cerita & Fanfic', value: stats?.fanfics || 0, icon: PenSquare, color: 'text-orange-400', bg: 'bg-orange-400/10' },
     { label: 'Meme Diposting', value: stats?.memes || 0, icon: SmilePlus, color: 'text-red-400', bg: 'bg-red-400/10' },
-    { label: 'Stories Aktif', value: stats?.stories || 0, icon: BookOpen, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
     { label: 'Shoutout Dikirim', value: stats?.shoutouts || 0, icon: Megaphone, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
   ];
 

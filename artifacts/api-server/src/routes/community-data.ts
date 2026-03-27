@@ -4,7 +4,7 @@ import {
   milestonesTable, diaryTable, diaryEntriesTable, birthdaysTable,
   usersTable, membersTable, chatMessagesTable, photosTable,
   memoriesTable, musicTable, gameLeaderboardTable, fanficsTable, memesTable,
-  shoutoutsTable, storiesTable, moodsTable
+  shoutoutsTable, moodsTable
 } from "@workspace/db";
 import { eq, desc, count, sql } from "drizzle-orm";
 
@@ -118,7 +118,6 @@ router.get("/stats", async (req, res) => {
   const [songs] = await db.select({ count: count() }).from(musicTable);
   const [fanfics] = await db.select({ count: count() }).from(fanficsTable);
   const [memes] = await db.select({ count: count() }).from(memesTable);
-  const [stories] = await db.select({ count: count() }).from(storiesTable);
   const [shoutouts] = await db.select({ count: count() }).from(shoutoutsTable);
   const founded = new Date("2025-11-30");
   const daysSinceFounded = Math.floor((Date.now() - founded.getTime()) / (1000 * 60 * 60 * 24));
@@ -130,7 +129,6 @@ router.get("/stats", async (req, res) => {
     songs: songs.count,
     fanfics: fanfics.count,
     memes: memes.count,
-    stories: stories.count,
     shoutouts: shoutouts.count,
     daysSinceFounded,
   });
@@ -180,7 +178,6 @@ router.get("/profile/:username", async (req, res) => {
   const [birthday] = await db.select().from(birthdaysTable).where(eq(birthdaysTable.username, username));
   const myPhotos = await db.select().from(photosTable).where(eq(photosTable.uploadedBy, username));
   const myShoutoutsReceived = await db.select().from(shoutoutsTable).where(eq(shoutoutsTable.toUsername, username));
-  const myStories = await db.select().from(storiesTable).where(eq(storiesTable.username, username));
   if (!user) return res.status(404).json({ error: "User not found" });
   return res.json({
     id: user.id,
@@ -197,7 +194,6 @@ router.get("/profile/:username", async (req, res) => {
     birthday: birthday || null,
     photoCount: myPhotos.length,
     shoutoutsReceived: myShoutoutsReceived.slice(0, 5),
-    activeStory: myStories[0] || null,
   });
 });
 

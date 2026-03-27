@@ -1,41 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { storiesTable, shoutoutsTable, moodsTable, memesTable } from "@workspace/db";
-import { eq, desc, gt } from "drizzle-orm";
+import { shoutoutsTable, moodsTable, memesTable } from "@workspace/db";
+import { eq, desc } from "drizzle-orm";
 
 const router = Router();
-
-// ─── STORIES (24hr status) ─────────────────────────────────────────────────
-
-router.get("/stories", async (req, res) => {
-  const now = new Date();
-  const stories = await db.select().from(storiesTable)
-    .where(gt(storiesTable.expiresAt, now))
-    .orderBy(desc(storiesTable.createdAt));
-  return res.json(stories);
-});
-
-router.post("/stories", async (req, res) => {
-  const { username, content, emoji, color, mediaUrl, mediaType } = req.body;
-  if (!username) return res.status(400).json({ error: "username required" });
-  if (!content && !mediaUrl) return res.status(400).json({ error: "content or media required" });
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  const [story] = await db.insert(storiesTable).values({
-    username,
-    content: content || "",
-    emoji: emoji || "✨",
-    color: color || "#ffffff",
-    mediaUrl: mediaUrl || null,
-    mediaType: mediaType || null,
-    expiresAt,
-  }).returning();
-  return res.json(story);
-});
-
-router.delete("/stories/:id", async (req, res) => {
-  await db.delete(storiesTable).where(eq(storiesTable.id, parseInt(req.params.id)));
-  return res.json({ success: true });
-});
 
 // ─── SHOUTOUTS ──────────────────────────────────────────────────────────────
 

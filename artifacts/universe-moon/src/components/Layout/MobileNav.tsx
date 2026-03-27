@@ -18,7 +18,6 @@ const MENU_SECTIONS = [
     title: '🌟 Sosial',
     links: [
       { label: 'Shoutout Board', href: '/shoutout' },
-      { label: 'Story Harian', href: '/story' },
       { label: 'Moodboard', href: '/moodboard' },
       { label: 'Q&A Anonim', href: '/qa' },
       { label: 'NGL', href: '/ngl' },
