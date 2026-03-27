@@ -143,7 +143,7 @@ export default function Chat() {
   const displayMessages = tab === 'dm' ? dmMessages : messages;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-3 animate-in fade-in">
+    <div className="flex h-[calc(100vh-8rem)] gap-3 animate-in fade-in max-w-2xl mx-auto w-full">
       {/* DM List Sidebar */}
       <AnimatePresence>
         {showDmList && (

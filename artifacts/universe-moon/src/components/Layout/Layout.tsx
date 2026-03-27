@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { DynamicSky } from '../Theme/DynamicSky';
+import { MusicBar } from '../MusicBar';
 import { useAuthStore } from '@/hooks/use-auth';
 import { Redirect } from 'wouter';
 import { Clock, Volume2, VolumeX } from 'lucide-react';
@@ -45,6 +46,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </main>
       <MobileNav />
+      <MusicBar />
     </div>
   );
 }
