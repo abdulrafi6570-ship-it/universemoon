@@ -41,35 +41,38 @@
 }
 
 :root {
-  --background: 240 10% 4%;
-  --foreground: 0 0% 95%;
+  /* Pure black base */
+  --background: 0 0% 3%;
+  --foreground: 0 0% 97%;
   
-  --card: 0 0% 100% / 0.04;
-  --card-foreground: 0 0% 95%;
-  --card-border: 0 0% 100% / 0.09;
+  /* Cards — crisp white glass */
+  --card: 0 0% 100% / 0.06;
+  --card-foreground: 0 0% 97%;
+  --card-border: 0 0% 100% / 0.12;
   
-  --popover: 240 10% 6%;
-  --popover-foreground: 0 0% 95%;
-  --popover-border: 0 0% 100% / 0.09;
+  --popover: 0 0% 5%;
+  --popover-foreground: 0 0% 97%;
+  --popover-border: 0 0% 100% / 0.12;
   
-  --primary: 262 83% 58%;
-  --primary-foreground: 0 0% 100%;
+  /* Primary — pure white */
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 0%;
   
-  --secondary: 0 0% 100% / 0.1;
-  --secondary-foreground: 0 0% 98%;
+  --secondary: 0 0% 100% / 0.08;
+  --secondary-foreground: 0 0% 97%;
   
   --muted: 0 0% 100% / 0.05;
-  --muted-foreground: 0 0% 100% / 0.5;
+  --muted-foreground: 0 0% 60%;
   
-  --accent: 210 100% 60%;
+  --accent: 0 0% 100% / 0.12;
   --accent-foreground: 0 0% 100%;
   
-  --destructive: 0 84% 60%;
+  --destructive: 0 75% 55%;
   --destructive-foreground: 0 0% 100%;
   
-  --border: 0 0% 100% / 0.09;
-  --input: 0 0% 100% / 0.09;
-  --ring: 262 83% 58%;
+  --border: 0 0% 100% / 0.10;
+  --input: 0 0% 100% / 0.08;
+  --ring: 0 0% 100% / 0.4;
   
   --radius: 1rem;
 }
@@ -80,6 +83,7 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground overflow-x-hidden;
+    background-color: #080808;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif;
@@ -87,15 +91,37 @@
 }
 
 @layer utilities {
+  /* iPhone-style glass — crisp white on black */
   .glass {
-    @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_0_24px_rgba(255,255,255,0.03)];
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 0 0.5px rgba(255,255,255,0.05) inset, 0 4px 24px rgba(0,0,0,0.4);
   }
+
   .glass-hover {
-    @apply hover:bg-white/10 hover:border-white/20 hover:shadow-[0_0_24px_rgba(255,255,255,0.06)] transition-all duration-300;
+    transition: all 0.25s ease;
   }
+  .glass-hover:hover {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 0 0 0.5px rgba(255,255,255,0.08) inset, 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  /* Strong glass for modals / cards */
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 0 0 0.5px rgba(255,255,255,0.06) inset, 0 8px 40px rgba(0,0,0,0.5);
+  }
+
   .text-glow {
-    text-shadow: 0 0 12px rgba(255,255,255,0.3);
+    text-shadow: 0 0 16px rgba(255,255,255,0.35);
   }
+
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -103,12 +129,29 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* iPhone pill button */
+  .btn-pill {
+    @apply rounded-full font-semibold tracking-wide transition-all duration-200;
+    background: rgba(255,255,255,0.95);
+    color: #000;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.4);
+  }
+  .btn-pill:hover {
+    background: rgba(255,255,255,1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
 }
 
-/* Star Twinkle Animation */
-@keyframes twk { 
-  from { opacity: 0.1; transform: scale(0.8); } 
-  to { opacity: 0.8; transform: scale(1.2); } 
+/* ── Star animations ────────────────────────── */
+@keyframes twk {
+  from { opacity: 0.05; transform: scale(0.7); }
+  to   { opacity: 0.9;  transform: scale(1.3); }
+}
+@keyframes twk-bright {
+  from { opacity: 0.4; transform: scale(0.8); }
+  to   { opacity: 1.0; transform: scale(1.5); }
 }
 
 .star {
@@ -116,4 +159,33 @@
   background: white;
   border-radius: 50%;
   animation: twk var(--d, 3s) var(--dl, 0s) infinite alternate ease-in-out;
+}
+
+.star-bright {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 4px 1px rgba(255,255,255,0.6);
+  animation: twk-bright var(--d, 2.5s) var(--dl, 0s) infinite alternate ease-in-out;
+}
+
+/* ── Scrollbar styling ──────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* ── Selection ──────────────────────────────── */
+::selection {
+  background: rgba(255,255,255,0.2);
+  color: white;
 }

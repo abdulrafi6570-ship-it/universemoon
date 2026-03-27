@@ -30,7 +30,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="flex h-screen overflow-hidden text-foreground">
       <DynamicSky />
       <Sidebar />
-      <main className="flex-1 overflow-y-auto relative z-0 pb-20 md:pb-0 scroll-smooth">
+      <main className="flex-1 overflow-y-auto relative z-[2] pb-20 md:pb-0 scroll-smooth">
         <header className="sticky top-0 z-20 glass border-b border-x-0 border-t-0 border-white/10 px-6 py-4 flex justify-between items-center backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-muted-foreground" />

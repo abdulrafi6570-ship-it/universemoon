@@ -46,13 +46,13 @@ export function useTimePhase() {
   return { phase, img: TIME_IMGS[phase], label: TIME_LABELS[phase], icon: TIME_IMGS[phase] };
 }
 
-function Particle({ type, onDone }: { type: EventType; onDone: () => void }) {
-  const particles = useMemo(() => Array.from({ length: 48 }, (_, i) => ({
+function Particle({ type }: { type: EventType }) {
+  const particles = useMemo(() => Array.from({ length: 52 }, (_, i) => ({
     id: i,
     left: `${Math.random() * 100}%`,
-    delay: Math.random() * 2,
-    dur: 1.8 + Math.random() * 2.5,
-    size: type === 'coin_rain' ? 28 : type === 'moon_rise' ? 48 : 20 + Math.random() * 14,
+    delay: Math.random() * 3,
+    dur: 2.2 + Math.random() * 3,
+    size: type === 'coin_rain' ? 30 : type === 'moon_rise' ? 52 : 18 + Math.random() * 18,
     rotate: Math.random() * 360,
   })), [type]);
 
@@ -60,7 +60,7 @@ function Particle({ type, onDone }: { type: EventType; onDone: () => void }) {
   if (!type || !imgSrc) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] pointer-events-none overflow-hidden">
+    <div className="fixed inset-0 z-[1] pointer-events-none overflow-hidden opacity-70">
       {particles.map(p => (
         <img
           key={p.id}
@@ -69,19 +69,18 @@ function Particle({ type, onDone }: { type: EventType; onDone: () => void }) {
           style={{
             position: 'absolute',
             left: p.left,
-            top: '-60px',
+            top: '-70px',
             width: p.size,
             height: p.size,
-            animation: `fall ${p.dur}s ${p.delay}s linear`,
-            animationFillMode: 'forwards',
+            animation: `fall ${p.dur}s ${p.delay}s linear infinite`,
           }}
         />
       ))}
       <style>{`
         @keyframes fall {
-          0%   { transform: translateY(0) rotate(0deg);    opacity: 1; }
-          80%  { opacity: 1; }
-          100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+          0%   { transform: translateY(0) rotate(0deg);       opacity: 0.8; }
+          85%  { opacity: 0.6; }
+          100% { transform: translateY(110vh) rotate(400deg); opacity: 0; }
         }
       `}</style>
     </div>
@@ -91,11 +90,15 @@ function Particle({ type, onDone }: { type: EventType; onDone: () => void }) {
 function EventCountdown({ seconds, label }: { seconds: number; label: string }) {
   if (seconds <= 0) return null;
   return (
-    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-      className="fixed top-20 left-1/2 -translate-x-1/2 z-[200] glass border border-white/20 rounded-2xl px-5 py-2.5 flex items-center gap-3 shadow-xl">
-      <span className="text-sm font-semibold">{label}</span>
-      <div className="bg-primary/20 rounded-lg px-3 py-1">
-        <span className="font-mono text-sm font-bold text-primary">{seconds}s</span>
+    <motion.div
+      initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+      className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+    >
+      <div className="glass border border-white/20 rounded-2xl px-5 py-2.5 flex items-center gap-3 shadow-2xl">
+        <span className="text-sm font-semibold">{label}</span>
+        <div className="bg-white/10 rounded-lg px-3 py-1">
+          <span className="font-mono text-sm font-bold text-white">{seconds}s</span>
+        </div>
       </div>
     </motion.div>
   );
@@ -108,22 +111,21 @@ export function DynamicSky() {
   const lastEventIdRef = useRef<number>(-1);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const stars = useMemo(() => Array.from({ length: 70 }).map((_, i) => ({
+  const stars = useMemo(() => Array.from({ length: 90 }).map((_, i) => ({
     id: i,
     left: `${Math.random() * 100}%`,
-    top: `${Math.random() * 75}%`,
-    size: `${Math.random() * 2.5 + 0.5}px`,
-    duration: `${Math.random() * 3 + 2}s`,
-    delay: `${Math.random() * 2}s`,
+    top: `${Math.random() * 85}%`,
+    size: `${Math.random() * 3 + 0.5}px`,
+    duration: `${Math.random() * 4 + 2}s`,
+    delay: `${Math.random() * 3}s`,
+    bright: Math.random() > 0.85,
   })), []);
 
   const startEvent = (eventData: { type: EventType; id: number; duration: number; label: string }) => {
     if (lastEventIdRef.current === eventData.id) return;
     lastEventIdRef.current = eventData.id;
-
     setActiveEvent(eventData);
     setCountdown(eventData.duration);
-
     if (countdownRef.current) clearInterval(countdownRef.current);
     let rem = eventData.duration;
     countdownRef.current = setInterval(() => {
@@ -160,49 +162,104 @@ export function DynamicSky() {
 
   return (
     <>
-      {/* Background */}
+      {/* Background — rendered behind everything at z-[-1] */}
       <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
         <AnimatePresence mode="sync">
+
+          {/* MALAM — hitam pekat dengan bintang */}
           {phase === 'night' && (
-            <motion.div key="night" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 2 }}
-              className="absolute inset-0 bg-gradient-to-b from-[#02020c] via-[#04041a] to-[#060810]">
+            <motion.div key="night"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 2.5 }}
+              className="absolute inset-0"
+              style={{ background: 'radial-gradient(ellipse at top, #03030f 0%, #000005 50%, #000000 100%)' }}
+            >
+              {/* Stars */}
               {stars.map(star => (
-                <div key={star.id} className="star" style={{ left: star.left, top: star.top, width: star.size, height: star.size, '--d': star.duration, '--dl': star.delay } as any} />
+                <div key={star.id} className={star.bright ? 'star-bright' : 'star'}
+                  style={{ left: star.left, top: star.top, width: star.size, height: star.size, '--d': star.duration, '--dl': star.delay } as any}
+                />
               ))}
-              {/* Moon glow */}
-              <div className="absolute top-6 right-[10%] w-32 h-32 rounded-full bg-white/[0.03] shadow-[0_0_120px_40px_rgba(255,255,255,0.06)]" />
-              <div className="absolute top-4 right-[9%] w-28 h-28 rounded-full bg-white/[0.05]" style={{ clipPath: 'polygon(30% 0%, 100% 0%, 100% 100%, 30% 100%, 0% 50%)' }} />
+              {/* Moon crescent */}
+              <div className="absolute top-8 right-[12%] w-36 h-36">
+                <div className="absolute inset-0 rounded-full bg-white/[0.07] blur-2xl" />
+                <div className="absolute inset-2 rounded-full"
+                  style={{ background: 'radial-gradient(circle at 40% 50%, rgba(255,255,255,0.12) 0%, transparent 70%)' }}
+                />
+              </div>
+              {/* Deep space glow */}
+              <div className="absolute top-0 left-1/4 w-[60%] h-[30%] rounded-full blur-[80px]"
+                style={{ background: 'rgba(20, 10, 40, 0.5)' }}
+              />
             </motion.div>
           )}
+
+          {/* PAGI — langit biru keunguan subuh */}
           {phase === 'dawn' && (
-            <motion.div key="dawn" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 2 }}
-              className="absolute inset-0 bg-gradient-to-b from-[#0e0820] via-[#1a0e2a] to-[#06040e]">
-              <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-orange-900/20 via-pink-900/10 to-transparent" />
-              <div className="absolute bottom-[15%] left-[5%] w-96 h-48 rounded-full bg-orange-700/10 blur-3xl" />
-              <div className="absolute bottom-[5%] right-[10%] w-72 h-36 rounded-full bg-pink-700/8 blur-3xl" />
-              <div className="absolute top-[25%] left-[30%] w-20 h-20 rounded-full bg-amber-400/6 blur-2xl" />
-              {stars.slice(0, 25).map(star => (
-                <div key={star.id} className="star opacity-30" style={{ left: star.left, top: star.top, width: star.size, height: star.size, '--d': star.duration, '--dl': star.delay } as any} />
+            <motion.div key="dawn"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 2.5 }}
+              className="absolute inset-0"
+              style={{ background: 'linear-gradient(to bottom, #000814 0%, #0a1628 30%, #1a0a2e 60%, #2d0a1e 80%, #1a0510 100%)' }}
+            >
+              {/* Horizon glow */}
+              <div className="absolute bottom-0 left-0 right-0 h-[45%]"
+                style={{ background: 'linear-gradient(to top, rgba(180,60,0,0.25) 0%, rgba(220,80,20,0.12) 30%, transparent 100%)' }}
+              />
+              {/* Sun peeking */}
+              <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 w-[500px] h-[120px] rounded-full blur-[60px]"
+                style={{ background: 'rgba(255,100,20,0.18)' }}
+              />
+              <div className="absolute bottom-[5%] left-1/2 -translate-x-1/2 w-[200px] h-[80px] rounded-full blur-[40px]"
+                style={{ background: 'rgba(255,160,40,0.22)' }}
+              />
+              {/* Fading stars */}
+              {stars.slice(0, 30).map(star => (
+                <div key={star.id} className="star opacity-20"
+                  style={{ left: star.left, top: star.top, width: star.size, height: star.size, '--d': star.duration, '--dl': star.delay } as any}
+                />
               ))}
+              {/* Blue atmosphere */}
+              <div className="absolute top-0 left-0 right-0 h-[40%]"
+                style={{ background: 'linear-gradient(to bottom, rgba(10,20,60,0.6) 0%, transparent 100%)' }}
+              />
             </motion.div>
           )}
+
+          {/* SIANG — gelap cerah, dark navy biru */}
           {phase === 'day' && (
-            <motion.div key="day" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 2 }}
-              className="absolute inset-0 bg-gradient-to-b from-[#0a1628] via-[#0d1a32] to-[#08101e]">
-              <div className="absolute top-0 left-0 right-0 h-[35%] bg-gradient-to-b from-blue-900/15 to-transparent" />
-              <div className="absolute top-[5%] left-[15%] w-64 h-64 rounded-full bg-blue-500/5 blur-3xl" />
-              <div className="absolute top-[3%] right-[20%] w-40 h-40 rounded-full bg-sky-400/4 blur-2xl" />
-              <div className="absolute top-[8%] left-[40%] w-16 h-16 rounded-full bg-yellow-300/8 blur-xl" />
+            <motion.div key="day"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 2.5 }}
+              className="absolute inset-0"
+              style={{ background: 'linear-gradient(to bottom, #060d1f 0%, #0b1a36 40%, #0d1f3c 70%, #06101f 100%)' }}
+            >
+              {/* Sun glow top-center */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] blur-[80px]"
+                style={{ background: 'rgba(60,120,255,0.12)' }}
+              />
+              <div className="absolute top-[2%] left-1/2 -translate-x-1/2 w-[200px] h-[100px] blur-[50px]"
+                style={{ background: 'rgba(255,220,50,0.10)' }}
+              />
+              {/* Atmosphere */}
+              <div className="absolute top-0 left-0 right-0 h-[55%]"
+                style={{ background: 'linear-gradient(to bottom, rgba(15,35,80,0.5) 0%, transparent 100%)' }}
+              />
+              {/* Cloud-like wisps */}
+              <div className="absolute top-[15%] left-[10%] w-80 h-24 blur-[50px] rounded-full"
+                style={{ background: 'rgba(30,60,120,0.15)' }}
+              />
+              <div className="absolute top-[20%] right-[15%] w-60 h-20 blur-[40px] rounded-full"
+                style={{ background: 'rgba(20,50,100,0.12)' }}
+              />
             </motion.div>
           )}
+
         </AnimatePresence>
       </div>
 
-      {/* Event Particles */}
+      {/* Event Particles — behind UI content (z-[1]), above background (z-[-1]) */}
       <AnimatePresence>
         {activeEvent && (
           <motion.div key={`event-${activeEvent.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <Particle type={activeEvent.type} onDone={() => {}} />
+            <Particle type={activeEvent.type} />
           </motion.div>
         )}
       </AnimatePresence>
