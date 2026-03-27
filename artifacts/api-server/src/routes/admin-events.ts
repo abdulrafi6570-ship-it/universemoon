@@ -1,7 +1,15 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { adminEventsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import {
+  adminEventsTable, chatMessagesTable, chatDmsTable, nglMessagesTable,
+  nglReactionsTable, nglCommentsTable, photosTable, memoriesTable, musicTable,
+  shoutoutsTable, moodsTable, storiesTable, capsulesTable, qaTable,
+  playlistTable, memesTable, quotesTable, fanficsTable, diaryEntriesTable,
+  diaryTable, milestonesTable, familiesTable, familyMembersTable,
+  familyProposalsTable, familyWallPostsTable, gameRoomsTable, gameStatesTable,
+  gameLeaderboardTable, reactionsTable, votesTable, pollsTable, usersTable
+} from "@workspace/db";
+import { eq, desc, sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -56,6 +64,59 @@ router.post("/", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   await db.update(adminEventsTable).set({ isActive: false }).where(eq(adminEventsTable.id, parseInt(req.params.id)));
   res.json({ success: true });
+});
+
+// ─── RESET SEMUA DATA ───────────────────────────────────────────────────────
+router.post("/reset-all", async (req, res) => {
+  const { confirm, adminUsername } = req.body;
+  if (confirm !== "RESET") return res.status(400).json({ error: "Konfirmasi tidak valid" });
+  if (!adminUsername) return res.status(400).json({ error: "adminUsername required" });
+
+  try {
+    // Hapus semua konten komunitas (urutan penting — hapus yang ada FK dulu)
+    await db.delete(familyWallPostsTable);
+    await db.delete(familyProposalsTable);
+    await db.delete(familyMembersTable);
+    await db.delete(familiesTable);
+    await db.delete(nglCommentsTable);
+    await db.delete(nglReactionsTable);
+    await db.delete(nglMessagesTable);
+    await db.delete(chatDmsTable);
+    await db.delete(chatMessagesTable);
+    await db.delete(photosTable);
+    await db.delete(memoriesTable);
+    await db.delete(musicTable);
+    await db.delete(shoutoutsTable);
+    await db.delete(moodsTable);
+    await db.delete(storiesTable);
+    await db.delete(capsulesTable);
+    await db.delete(qaTable);
+    await db.delete(playlistTable);
+    await db.delete(memesTable);
+    await db.delete(quotesTable);
+    await db.delete(fanficsTable);
+    await db.delete(diaryEntriesTable);
+    await db.delete(diaryTable);
+    await db.delete(milestonesTable);
+    await db.delete(gameRoomsTable);
+    await db.delete(gameStatesTable);
+    await db.delete(gameLeaderboardTable);
+    await db.delete(reactionsTable);
+    await db.delete(votesTable);
+    await db.delete(pollsTable);
+    await db.delete(adminEventsTable);
+    // Reset XP, level, streak semua user (tapi jangan hapus akunnya)
+    await db.update(usersTable).set({ xp: 0, level: 1, streak: 0 });
+
+    return res.json({
+      success: true,
+      message: "Semua data komunitas telah direset. Akun user tetap ada.",
+      resetBy: adminUsername,
+      resetAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
+  }
 });
 
 export default router;

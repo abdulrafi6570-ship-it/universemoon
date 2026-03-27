@@ -5,7 +5,7 @@ import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, UserMinus, Trash2, RotateCcw, Users, UserCheck,
-  UserX, Plus, ChevronDown, ChevronUp, Camera, Upload, Settings
+  UserX, Plus, Camera, Settings, AlertTriangle, X, Flame
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRef } from 'react';
@@ -22,6 +22,10 @@ export default function Admin() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [uploading, setUploading] = useState<number | null>(null);
   const [addForm, setAddForm] = useState({ name: '', role: 'Member', joinDate: '', specialty: '' });
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
+  const [resetConfirmText, setResetConfirmText] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   if (!user || user.role !== 'admin') {
     return (
@@ -93,6 +97,32 @@ export default function Admin() {
       toast({ title: 'Member baru ditambahkan!' });
     },
   });
+
+  const handleReset = async () => {
+    if (resetConfirmText !== 'RESET') return;
+    setResetting(true);
+    try {
+      const res = await fetch('/api/events/reset-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: 'RESET', adminUsername: user!.username }),
+      });
+      if (res.ok) {
+        toast({ title: '🔥 Semua data komunitas telah direset dari awal.' });
+        setShowResetModal(false);
+        setResetStep(1);
+        setResetConfirmText('');
+        qc.invalidateQueries();
+      } else {
+        const err = await res.json();
+        toast({ title: err.error || 'Gagal reset', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Koneksi gagal', variant: 'destructive' });
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const uploadAvatar = async (memberId: number, file: File) => {
     setUploading(memberId);
@@ -332,6 +362,139 @@ export default function Admin() {
           </div>
         </div>
       )}
+
+      {/* ─── Zona Berbahaya ─────────────────────────────────────────── */}
+      <div className="border border-red-500/30 rounded-3xl overflow-hidden">
+        <div className="flex items-center gap-2 p-5 border-b border-red-500/20 bg-red-500/5">
+          <AlertTriangle className="w-5 h-5 text-red-400" />
+          <h2 className="font-semibold text-red-300">Zona Berbahaya</h2>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-semibold text-sm text-red-300">Reset Semua Data Komunitas</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Menghapus seluruh chat, foto, memori, NGL, keluarga APIPI, game, poll, diary, dan semua konten lainnya.
+                Akun login & daftar member <span className="text-white/70 font-medium">tetap aman</span>.
+              </p>
+            </div>
+            <button
+              onClick={() => { setShowResetModal(true); setResetStep(1); setResetConfirmText(''); }}
+              className="shrink-0 flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-300 border border-red-500/40 rounded-xl text-sm font-semibold hover:bg-red-500/30 transition-all"
+            >
+              <Flame className="w-4 h-4" /> Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Modal Konfirmasi Reset ──────────────────────────────────── */}
+      <AnimatePresence>
+        {showResetModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={e => { if (e.target === e.currentTarget) { setShowResetModal(false); setResetStep(1); setResetConfirmText(''); } }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="w-full max-w-md glass rounded-3xl border border-red-500/30 overflow-hidden">
+
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-red-500/20 bg-red-500/10">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                  <span className="font-bold text-red-300">Konfirmasi Reset Data</span>
+                </div>
+                <button onClick={() => { setShowResetModal(false); setResetStep(1); setResetConfirmText(''); }}
+                  className="p-1.5 text-muted-foreground hover:text-white transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-5">
+                {resetStep === 1 ? (
+                  <>
+                    {/* Step 1: Tampilkan apa yang akan dihapus */}
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 space-y-3">
+                      <p className="text-sm font-semibold text-red-300 flex items-center gap-2">
+                        <AlertTriangle size={14} /> Ini akan MENGHAPUS PERMANEN:
+                      </p>
+                      <ul className="text-xs text-muted-foreground space-y-1.5">
+                        {[
+                          '💬 Semua pesan chat & DM',
+                          '📸 Semua foto di galeri',
+                          '📖 Semua memori & milestones',
+                          '🎵 Semua musik & playlist',
+                          '👻 Semua pesan NGL',
+                          '👨‍👩‍👧‍👦 Semua keluarga APIPI',
+                          '🎮 Semua data game & leaderboard',
+                          '📊 Semua poll & voting',
+                          '📔 Semua diary & fanfic',
+                          '😊 Semua mood, meme, quote, shoutout',
+                          '🌟 Semua XP & streak user direset ke 0',
+                        ].map(item => (
+                          <li key={item} className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3">
+                      <p className="text-xs text-green-400">
+                        ✅ <strong>Aman:</strong> Akun login, daftar member, rules, links, birthdays, & drakor tidak ikut terhapus.
+                      </p>
+                    </div>
+                    <p className="text-sm text-center text-muted-foreground">Apakah kamu yakin ingin melanjutkan?</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => { setShowResetModal(false); setResetStep(1); }}
+                        className="flex-1 py-2.5 bg-white/10 rounded-xl text-sm hover:bg-white/20 transition-colors">
+                        Batal
+                      </button>
+                      <button onClick={() => setResetStep(2)}
+                        className="flex-1 py-2.5 bg-red-500/30 text-red-300 border border-red-500/40 rounded-xl text-sm font-semibold hover:bg-red-500/40 transition-colors">
+                        Ya, Lanjut →
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Step 2: Ketik RESET untuk konfirmasi */}
+                    <div className="text-center space-y-2">
+                      <div className="text-4xl">🔥</div>
+                      <p className="font-bold text-red-300">Konfirmasi Akhir</p>
+                      <p className="text-sm text-muted-foreground">
+                        Ketik <span className="font-mono font-bold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">RESET</span> untuk melanjutkan
+                      </p>
+                    </div>
+                    <input
+                      value={resetConfirmText}
+                      onChange={e => setResetConfirmText(e.target.value)}
+                      placeholder="Ketik RESET di sini..."
+                      className="w-full text-center font-mono text-lg glass rounded-xl px-4 py-3 border border-red-500/30 focus:outline-none focus:border-red-500/60 tracking-widest"
+                    />
+                    <div className="flex gap-3">
+                      <button onClick={() => setResetStep(1)}
+                        className="flex-1 py-2.5 bg-white/10 rounded-xl text-sm hover:bg-white/20 transition-colors">
+                        ← Kembali
+                      </button>
+                      <button
+                        onClick={handleReset}
+                        disabled={resetConfirmText !== 'RESET' || resetting}
+                        className="flex-1 py-2.5 bg-red-600/60 text-white border border-red-500/60 rounded-xl text-sm font-bold hover:bg-red-600/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {resetting ? (
+                          <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Mereset...</>
+                        ) : (
+                          <><Flame size={14} /> Reset Sekarang</>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
