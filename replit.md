@@ -2,7 +2,7 @@
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Contains the **Universe Moon [Um]** full-stack web app — a WhatsApp group community platform.
+pnpm workspace monorepo using TypeScript. Contains the **Universe Moon [Um]** full-stack web app — a WhatsApp group community platform — plus an **Expo mobile app** (Android/iOS) connected to the same API.
 
 ## Stack
 
@@ -22,8 +22,9 @@ pnpm workspace monorepo using TypeScript. Contains the **Universe Moon [Um]** fu
 ```text
 artifacts-monorepo/
 ├── artifacts/
-│   ├── api-server/           # Express API server (port 8080)
-│   └── universe-moon/        # React frontend (port 26156)
+│   ├── api-server/              # Express API server (port 8080)
+│   ├── universe-moon/           # React frontend (port 26156)
+│   └── universe-moon-mobile/    # Expo React Native app (Android/iOS/Web)
 │       └── src/
 │           ├── pages/        # All page components
 │           ├── components/   # Layout, Theme/DynamicSky, UI

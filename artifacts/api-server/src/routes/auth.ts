@@ -132,12 +132,13 @@ router.post("/login", async (req, res) => {
   res.cookie("session_token", sessionToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
   return res.json({
     success: true,
+    sessionToken,
     user: { id: user.id, username: user.username, role: user.role, avatarUrl: user.avatarUrl, xp: user.xp, level: user.level, isBanned: user.isBanned },
   });
 });
 
 router.post("/logout", async (req, res) => {
-  const token = req.cookies?.session_token;
+  const token = req.cookies?.session_token || req.headers.authorization?.replace("Bearer ", "");
   if (token) {
     await db.delete(sessionsTable).where(eq(sessionsTable.sessionToken, token));
   }
@@ -146,7 +147,7 @@ router.post("/logout", async (req, res) => {
 });
 
 router.get("/me", async (req, res) => {
-  const token = req.cookies?.session_token;
+  const token = req.cookies?.session_token || req.headers.authorization?.replace("Bearer ", "");
   if (!token) {
     return res.status(401).json({ error: "Not authenticated" });
   }
