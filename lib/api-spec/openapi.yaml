@@ -1,22 +1,50 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Universe Moon [Um] API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: members
+    description: Member management
+  - name: chat
+    description: Chat messages
+  - name: ngl
+    description: Anonymous messages
+  - name: gallery
+    description: Photo gallery
+  - name: memories
+    description: Memory timeline
+  - name: links
+    description: Links collection
+  - name: music
+    description: Music playlist
+  - name: secrets
+    description: Vault secrets
+  - name: opmem
+    description: Open member recruitment
+  - name: mep
+    description: MEP video collection
+  - name: games
+    description: Games
+  - name: leaderboard
+    description: Leaderboard and XP
+  - name: reactions
+    description: Emoji reactions
+  - name: votes
+    description: Voting system
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +52,918 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/validate-token:
+    post:
+      operationId: validateToken
+      tags: [auth]
+      summary: Validate registration token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+              required: [token]
+      responses:
+        "200":
+          description: Valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenValidationResponse"
+        "400":
+          description: Invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /members:
+    get:
+      operationId: getMembers
+      tags: [members]
+      summary: Get all members
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+    post:
+      operationId: createMember
+      tags: [members]
+      summary: Create member (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemberRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+
+  /members/{id}:
+    put:
+      operationId: updateMember
+      tags: [members]
+      summary: Update member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemberRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+    delete:
+      operationId: deleteMember
+      tags: [members]
+      summary: Delete member (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /members/{id}/kick:
+    post:
+      operationId: kickMember
+      tags: [members]
+      summary: Kick member (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+              required: [reason]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /chat:
+    get:
+      operationId: getChatMessages
+      tags: [chat]
+      summary: Get chat messages
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    post:
+      operationId: sendChatMessage
+      tags: [chat]
+      summary: Send chat message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendChatMessageRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
+
+  /chat/{id}:
+    delete:
+      operationId: deleteChatMessage
+      tags: [chat]
+      summary: Delete chat message
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /ngl:
+    get:
+      operationId: getNglMessages
+      tags: [ngl]
+      summary: Get NGL messages
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NglMessage"
+    post:
+      operationId: sendNglMessage
+      tags: [ngl]
+      summary: Send anonymous NGL message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendNglRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NglMessage"
+
+  /ngl/{id}:
+    delete:
+      operationId: deleteNglMessage
+      tags: [ngl]
+      summary: Delete NGL message (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /photos:
+    get:
+      operationId: getPhotos
+      tags: [gallery]
+      summary: Get photos
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Photo"
+    post:
+      operationId: addPhoto
+      tags: [gallery]
+      summary: Add photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddPhotoRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photo"
+
+  /photos/{id}:
+    delete:
+      operationId: deletePhoto
+      tags: [gallery]
+      summary: Delete photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /memories:
+    get:
+      operationId: getMemories
+      tags: [memories]
+      summary: Get memories
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Memory"
+    post:
+      operationId: addMemory
+      tags: [memories]
+      summary: Add memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddMemoryRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+
+  /memories/{id}:
+    delete:
+      operationId: deleteMemory
+      tags: [memories]
+      summary: Delete memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /links:
+    get:
+      operationId: getLinks
+      tags: [links]
+      summary: Get links
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Link"
+    post:
+      operationId: addLink
+      tags: [links]
+      summary: Add link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddLinkRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Link"
+
+  /links/{id}:
+    delete:
+      operationId: deleteLink
+      tags: [links]
+      summary: Delete link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /music:
+    get:
+      operationId: getMusic
+      tags: [music]
+      summary: Get music playlist
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Track"
+    post:
+      operationId: addTrack
+      tags: [music]
+      summary: Add track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTrackRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+
+  /music/{id}:
+    delete:
+      operationId: deleteTrack
+      tags: [music]
+      summary: Delete track
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /secrets:
+    get:
+      operationId: getSecrets
+      tags: [secrets]
+      summary: Get vault secrets (requires PIN)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Secret"
+    post:
+      operationId: addSecret
+      tags: [secrets]
+      summary: Add secret
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddSecretRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Secret"
+
+  /secrets/{id}:
+    put:
+      operationId: toggleSecret
+      tags: [secrets]
+      summary: Toggle secret locked state
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Secret"
+    delete:
+      operationId: deleteSecret
+      tags: [secrets]
+      summary: Delete secret
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /opmem:
+    get:
+      operationId: getOpMem
+      tags: [opmem]
+      summary: Get OpMem info
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpMem"
+    post:
+      operationId: createOpMem
+      tags: [opmem]
+      summary: Create/update OpMem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOpMemRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpMem"
+
+  /opmem/accepted:
+    post:
+      operationId: addAcceptedMember
+      tags: [opmem]
+      summary: Add accepted member to OpMem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                opMemId:
+                  type: integer
+              required: [name, opMemId]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /mep:
+    get:
+      operationId: getMeps
+      tags: [mep]
+      summary: Get MEP list
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Mep"
+    post:
+      operationId: createMep
+      tags: [mep]
+      summary: Create MEP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMepRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mep"
+
+  /mep/{id}:
+    delete:
+      operationId: deleteMep
+      tags: [mep]
+      summary: Delete MEP
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /games/imposter:
+    get:
+      operationId: getImposterGame
+      tags: [games]
+      summary: Get current imposter game state
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameState"
+    post:
+      operationId: createImposterGame
+      tags: [games]
+      summary: Create/start imposter game
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGameRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameState"
+
+  /games/imposter/action:
+    post:
+      operationId: gameAction
+      tags: [games]
+      summary: Perform game action (vote, eliminate, etc.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameActionRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameState"
+
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [leaderboard]
+      summary: Get leaderboard
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
+  /leaderboard/reset:
+    post:
+      operationId: resetLeaderboard
+      tags: [leaderboard]
+      summary: Reset leaderboard (admin)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /reactions:
+    post:
+      operationId: addReaction
+      tags: [reactions]
+      summary: Add reaction to content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddReactionRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /votes:
+    get:
+      operationId: getVotes
+      tags: [votes]
+      summary: Get votes for a topic
+      parameters:
+        - name: topic
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteResult"
+    post:
+      operationId: castVote
+      tags: [votes]
+      summary: Cast a vote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CastVoteRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /votes/reset:
+    post:
+      operationId: resetVotes
+      tags: [votes]
+      summary: Reset votes (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topic:
+                  type: string
+              required: [topic]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /users/{id}/ban:
+    post:
+      operationId: banUser
+      tags: [auth]
+      summary: Ban user (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /users:
+    get:
+      operationId: getUsers
+      tags: [auth]
+      summary: Get all users (admin)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    delete:
+      operationId: deleteUser
+      tags: [auth]
+      summary: Delete user (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +971,559 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success]
+
+    RegisterRequest:
+      type: object
+      properties:
+        token:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+        avatarUrl:
+          type: string
+      required: [token, username, password]
+
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        user:
+          $ref: "#/components/schemas/User"
+        message:
+          type: string
+      required: [success]
+
+    TokenValidationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        role:
+          type: string
+      required: [valid]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        role:
+          type: string
+        avatarUrl:
+          type: string
+        xp:
+          type: integer
+        level:
+          type: integer
+        isBanned:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, username, role]
+
+    Member:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        nickname:
+          type: string
+        role:
+          type: string
+        bio:
+          type: string
+        joinDate:
+          type: string
+        favoriteSong:
+          type: string
+        socialLinks:
+          type: string
+        avatarUrl:
+          type: string
+        isActive:
+          type: boolean
+        kickReason:
+          type: string
+        kickDate:
+          type: string
+      required: [id, name, nickname, isActive]
+
+    CreateMemberRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        nickname:
+          type: string
+        role:
+          type: string
+        bio:
+          type: string
+        joinDate:
+          type: string
+        favoriteSong:
+          type: string
+        socialLinks:
+          type: string
+        avatarUrl:
+          type: string
+      required: [name, nickname]
+
+    UpdateMemberRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        nickname:
+          type: string
+        role:
+          type: string
+        bio:
+          type: string
+        favoriteSong:
+          type: string
+        socialLinks:
+          type: string
+        avatarUrl:
+          type: string
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        sender:
+          type: string
+        content:
+          type: string
+        replyToId:
+          type: integer
+        replyToContent:
+          type: string
+        isSticker:
+          type: boolean
+        stickerCode:
+          type: string
+        createdAt:
+          type: string
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+      required: [id, sender, content, createdAt]
+
+    SendChatMessageRequest:
+      type: object
+      properties:
+        sender:
+          type: string
+        content:
+          type: string
+        replyToId:
+          type: integer
+        isSticker:
+          type: boolean
+        stickerCode:
+          type: string
+      required: [sender, content]
+
+    NglMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        recipient:
+          type: string
+        createdAt:
+          type: string
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+      required: [id, content, createdAt]
+
+    SendNglRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        recipient:
+          type: string
+      required: [content]
+
+    Photo:
+      type: object
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        caption:
+          type: string
+        uploadedBy:
+          type: string
+        category:
+          type: string
+        createdAt:
+          type: string
+      required: [id, url, createdAt]
+
+    AddPhotoRequest:
+      type: object
+      properties:
+        url:
+          type: string
+        caption:
+          type: string
+        uploadedBy:
+          type: string
+        category:
+          type: string
+      required: [url]
+
+    Memory:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        date:
+          type: string
+        addedBy:
+          type: string
+        photo:
+          type: string
+        createdAt:
+          type: string
+      required: [id, title, content, createdAt]
+
+    AddMemoryRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        date:
+          type: string
+        addedBy:
+          type: string
+        photo:
+          type: string
+      required: [title, content]
+
+    Link:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        url:
+          type: string
+        desc:
+          type: string
+        category:
+          type: string
+        addedBy:
+          type: string
+        createdAt:
+          type: string
+      required: [id, title, url, createdAt]
+
+    AddLinkRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+        desc:
+          type: string
+        category:
+          type: string
+        addedBy:
+          type: string
+      required: [title, url]
+
+    Track:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        artist:
+          type: string
+        url:
+          type: string
+        addedBy:
+          type: string
+        createdAt:
+          type: string
+      required: [id, title, artist, createdAt]
+
+    AddTrackRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        artist:
+          type: string
+        url:
+          type: string
+        addedBy:
+          type: string
+      required: [title, artist]
+
+    Secret:
+      type: object
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        revealDate:
+          type: string
+        locked:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, content, locked, createdAt]
+
+    AddSecretRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        revealDate:
+          type: string
+      required: [content]
+
+    OpMem:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        openDate:
+          type: string
+        closeDate:
+          type: string
+        isOpen:
+          type: boolean
+        acceptedMembers:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+      required: [id, title, isOpen, createdAt]
+
+    CreateOpMemRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        openDate:
+          type: string
+        closeDate:
+          type: string
+        isOpen:
+          type: boolean
+      required: [title]
+
+    Mep:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        videoUrl:
+          type: string
+        participants:
+          type: array
+          items:
+            type: string
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+      required: [id, title, videoUrl, createdAt]
+
+    CreateMepRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        videoUrl:
+          type: string
+        participants:
+          type: array
+          items:
+            type: string
+        createdBy:
+          type: string
+      required: [title, videoUrl]
+
+    GameState:
+      type: object
+      properties:
+        id:
+          type: integer
+        gameType:
+          type: string
+        status:
+          type: string
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/GamePlayer"
+        phase:
+          type: string
+        round:
+          type: integer
+        winner:
+          type: string
+        createdAt:
+          type: string
+      required: [id, gameType, status, players, phase]
+
+    GamePlayer:
+      type: object
+      properties:
+        username:
+          type: string
+        role:
+          type: string
+        isAlive:
+          type: boolean
+        isRevealed:
+          type: boolean
+      required: [username, isAlive]
+
+    CreateGameRequest:
+      type: object
+      properties:
+        gameType:
+          type: string
+        players:
+          type: array
+          items:
+            type: string
+      required: [gameType, players]
+
+    GameActionRequest:
+      type: object
+      properties:
+        action:
+          type: string
+        targetUsername:
+          type: string
+        actorUsername:
+          type: string
+      required: [action, actorUsername]
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        avatarUrl:
+          type: string
+        xp:
+          type: integer
+        level:
+          type: integer
+        rank:
+          type: integer
+      required: [id, username, xp, level, rank]
+
+    AddReactionRequest:
+      type: object
+      properties:
+        contentType:
+          type: string
+        contentId:
+          type: integer
+        emoji:
+          type: string
+        username:
+          type: string
+      required: [contentType, contentId, emoji, username]
+
+    VoteResult:
+      type: object
+      properties:
+        topic:
+          type: string
+        votes:
+          type: object
+          additionalProperties:
+            type: integer
+        totalVotes:
+          type: integer
+        userVote:
+          type: string
+      required: [topic, totalVotes]
+
+    CastVoteRequest:
+      type: object
+      properties:
+        topic:
+          type: string
+        option:
+          type: string
+        username:
+          type: string
+      required: [topic, option, username]

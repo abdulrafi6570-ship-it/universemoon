@@ -91,6 +91,22 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### `artifacts/universe-moon` (`@workspace/universe-moon`)
+
+React + Vite frontend for Universe Moon [Um], the WhatsApp group community web app.
+
+- Entry: `src/main.tsx` → `src/App.tsx`
+- Pages: `src/pages/` — Auth, Home, Members, ExMembers, Gallery, Chat, Ngl, Leaderboard, Memories, Links, Music, Vault, OpMem, Mep, Games (+ 4 game pages), About
+- Components: `src/components/Layout/` (Sidebar, MobileNav, Layout), `src/components/Theme/DynamicSky.tsx`
+- Hooks: `src/hooks/use-auth.ts` (Zustand store with initAuth), `use-sound.ts`, `use-toast.ts`
+- Design: Dark cosmic glassmorphism — `bg-[#070707]` background, `glass` CSS utility class
+- Auth tokens: `"ADMIN UM SECRET"` → admin, `"MEMBER UM 2026"` → member
+- Vault PIN: `UM2025` (client-side validated)
+- Founded: 27 November 2025, Founder: iyuyun
+- XP system with 10 levels: Moonling→Stardust→Nebula→Comet→Galaxy→Supernova→Pulsar→Quasar→BlackHole→Universe
+- Mini-games: Imposter, Werewolf, Ludo, Dracula di Desa
+- `pnpm --filter @workspace/universe-moon run dev` — starts Vite dev server
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.

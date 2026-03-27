@@ -1,0 +1,25 @@
+packages:
+  "framer-motion": "For smooth page transitions, dynamic sky animations, and glassmorphism micro-interactions"
+  "date-fns": "For formatting chat timestamps, memory dates, and countdowns"
+  "zustand": "For client-side global state like guest mode and sound preferences"
+  "canvas-confetti": "For level-up and game win animations"
+  "clsx": "For conditional tailwind class merging"
+  "tailwind-merge": "For conditional tailwind class merging"
+
+images:
+  - path: "artifacts/universe-moon/public/images/universe-moon-logo.png"
+    description: "A beautiful minimalistic cosmic logo featuring a crescent moon and stars in white glowing lines on a transparent background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/universe-moon/public/images/hero-bg-night.png"
+    description: "A dark cosmic starry night sky background with deep blues and purples, ethereal clouds, and glowing stars"
+    aspect_ratio: "16:9"
+  - path: "artifacts/universe-moon/public/images/hero-bg-day.png"
+    description: "A beautiful bright day sky with fluffy clouds and brilliant sun rays"
+    aspect_ratio: "16:9"
+  - path: "artifacts/universe-moon/public/images/hero-bg-dawn.png"
+    description: "A beautiful sunrise dawn sky with pink, orange, and soft purple gradient clouds"
+    aspect_ratio: "16:9"
+
+notes:
+  - Assumes @workspace/api-client-react is available for all React Query hooks based on OpenAPI spec.
+  - Using zustand for local auth session sync and sound settings.
