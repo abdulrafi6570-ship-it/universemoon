@@ -281,7 +281,7 @@ router.post("/room/:code/start", async (req, res) => {
   if (room.hostUsername !== username) return res.status(403).json({ error: "Hanya host yang bisa mulai" });
 
   const players = (room.players as any[]).map(p => p.username);
-  if (players.length < 3) return res.status(400).json({ error: "Minimal 3 pemain" });
+  if (players.length < 2) return res.status(400).json({ error: "Minimal 2 pemain" });
 
   let updatedData: any = {};
 

@@ -16,10 +16,19 @@ router.get("/stories", async (req, res) => {
 });
 
 router.post("/stories", async (req, res) => {
-  const { username, content, emoji, color } = req.body;
-  if (!username || !content) return res.status(400).json({ error: "username and content required" });
+  const { username, content, emoji, color, mediaUrl, mediaType } = req.body;
+  if (!username) return res.status(400).json({ error: "username required" });
+  if (!content && !mediaUrl) return res.status(400).json({ error: "content or media required" });
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  const [story] = await db.insert(storiesTable).values({ username, content, emoji: emoji || "✨", color: color || "#ffffff", expiresAt }).returning();
+  const [story] = await db.insert(storiesTable).values({
+    username,
+    content: content || "",
+    emoji: emoji || "✨",
+    color: color || "#ffffff",
+    mediaUrl: mediaUrl || null,
+    mediaType: mediaType || null,
+    expiresAt,
+  }).returning();
   return res.json(story);
 });
 

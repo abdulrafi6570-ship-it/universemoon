@@ -58,6 +58,20 @@ export default function ImposterGame() {
 
   const username = user?.username || '';
 
+  const shareToChat = async (code: string) => {
+    if (!username) return;
+    try {
+      await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender: username,
+          content: `🎭 Yuk main Game Imposter bareng! Join pake kode: *${code}* → Games → Imposter → Join Room`,
+        }),
+      });
+      toast({ title: '✅ Kode sudah dikirim ke group chat!' });
+    } catch {}
+  };
+
   const fetchRoom = useCallback(async (code: string) => {
     try {
       const res = await fetch(API(`/room/${code}`));
@@ -233,9 +247,18 @@ export default function ImposterGame() {
         <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-4">
           <div><p className="text-xs text-muted-foreground mb-1">Kode Room</p>
             <span className="font-mono text-4xl font-black tracking-[0.3em] text-primary">{room.code}</span></div>
-          <button onClick={() => { navigator.clipboard.writeText(room.code); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="ml-auto p-3 glass rounded-xl">
-            {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => shareToChat(room.code)}
+              title="Kirim kode ke group chat"
+              className="px-3 py-2 glass rounded-xl text-xs font-semibold text-primary hover:bg-primary/20 transition-colors"
+            >
+              📢 Chat
+            </button>
+            <button onClick={() => { navigator.clipboard.writeText(room.code); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-3 glass rounded-xl">
+              {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -252,7 +275,7 @@ export default function ImposterGame() {
             ))}
           </div>
         </div>
-        {isHost && room.players.length >= 3 ? (
+        {isHost && room.players.length >= 2 ? (
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Pilih Kategori</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
@@ -264,7 +287,7 @@ export default function ImposterGame() {
               ))}
             </div>
           </div>
-        ) : isHost ? <p className="text-center text-sm text-muted-foreground">Butuh minimal 3 pemain</p>
+        ) : isHost ? <p className="text-center text-sm text-muted-foreground">Butuh minimal 2 pemain</p>
         : <p className="text-center text-sm text-muted-foreground animate-pulse flex items-center justify-center gap-2"><span className="w-2 h-2 rounded-full bg-primary animate-ping inline-block" /> Menunggu host memulai...</p>}
       </div>
     </div>

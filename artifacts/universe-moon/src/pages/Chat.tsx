@@ -26,7 +26,7 @@ export default function Chat() {
 
   const [messages, setMessages] = useState<any[]>([]);
   const [stickers, setStickers] = useState<any[]>([]);
-  const [members, setMembers] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [replyTo, setReplyTo] = useState<any>(null);
   const [showEmoji, setShowEmoji] = useState<number | null>(null);
@@ -56,10 +56,10 @@ export default function Chat() {
     } catch {}
   }, []);
 
-  const fetchMembers = useCallback(async () => {
+  const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch('/api/members?active=true');
-      if (res.ok) setMembers(await res.json());
+      const res = await fetch('/api/users');
+      if (res.ok) setUsers(await res.json());
     } catch {}
   }, []);
 
@@ -72,7 +72,7 @@ export default function Chat() {
   }, [user]);
 
   useEffect(() => {
-    fetchMessages(); fetchStickers(); fetchMembers();
+    fetchMessages(); fetchStickers(); fetchUsers();
     const id = setInterval(fetchMessages, 3000);
     return () => clearInterval(id);
   }, [fetchMessages]);
@@ -186,11 +186,11 @@ export default function Chat() {
               <button onClick={() => setShowDmList(false)}><X className="w-4 h-4" /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1">
-              {members.filter(m => m.name !== user?.username).map(m => (
-                <button key={m.id} onClick={() => { setDmPartner(m.name); setTab('dm'); setShowDmList(false); }}
-                  className={`w-full flex items-center gap-2 p-2 rounded-xl text-left hover:bg-white/10 transition-colors text-sm ${dmPartner === m.name ? 'bg-white/10' : ''}`}>
-                  <Avatar name={m.name} src={m.avatarUrl} size={6} />
-                  <span className="truncate">{m.name}</span>
+              {users.filter(u => u.username !== user?.username).map(u => (
+                <button key={u.id} onClick={() => { setDmPartner(u.username); setTab('dm'); setShowDmList(false); }}
+                  className={`w-full flex items-center gap-2 p-2 rounded-xl text-left hover:bg-white/10 transition-colors text-sm ${dmPartner === u.username ? 'bg-white/10' : ''}`}>
+                  <Avatar name={u.username} src={u.avatarUrl} size={6} />
+                  <span className="truncate">{u.username}</span>
                 </button>
               ))}
             </div>

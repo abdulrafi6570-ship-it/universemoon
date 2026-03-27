@@ -60,6 +60,17 @@ export default function DraculaGame() {
     else toast({ title: 'Kode tidak valid!', variant: 'destructive' });
   };
 
+  const shareToChat = async (code: string) => {
+    if (!username) return;
+    try {
+      await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender: username, content: `🧛 Yuk main Game Dracula bareng! Join pake kode: *${code}* → Games → Dracula → Join Room` }),
+      });
+      toast({ title: '✅ Kode sudah dikirim ke group chat!' });
+    } catch {}
+  };
+
   const startGame = async () => {
     const res = await fetch(API(`/room/${roomCode}/start`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
     if (res.ok) { setRoom(await res.json()); playSfx('notification'); }
@@ -161,9 +172,14 @@ export default function DraculaGame() {
         <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-4">
           <div><p className="text-xs text-muted-foreground mb-1">Kode Room</p>
             <span className="font-mono text-4xl font-black tracking-[0.3em] text-red-400">{room.code}</span></div>
-          <button onClick={() => { navigator.clipboard.writeText(room.code); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="ml-auto p-3 glass rounded-xl">
-            {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <button onClick={() => shareToChat(room.code)} title="Kirim ke group chat" className="px-3 py-2 glass rounded-xl text-xs font-semibold text-red-400 hover:bg-red-900/30 transition-colors">
+              📢 Chat
+            </button>
+            <button onClick={() => { navigator.clipboard.writeText(room.code); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-3 glass rounded-xl">
+              {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {room.players.map((p: any) => (
@@ -174,11 +190,11 @@ export default function DraculaGame() {
             </div>
           ))}
         </div>
-        {isHost && room.players.length >= 4 ? (
+        {isHost && room.players.length >= 2 ? (
           <button onClick={startGame} className="w-full py-3 bg-gradient-to-r from-red-900 to-red-800 border border-red-700/50 rounded-xl font-semibold flex items-center justify-center gap-2">
             <Moon className="w-5 h-5" /> Mulai Malam
           </button>
-        ) : isHost ? <p className="text-center text-sm text-muted-foreground">Butuh minimal 4 pemain</p>
+        ) : isHost ? <p className="text-center text-sm text-muted-foreground">Butuh minimal 2 pemain</p>
         : <p className="text-center text-sm text-muted-foreground animate-pulse">Menunggu host...</p>}
       </div>
     </div>

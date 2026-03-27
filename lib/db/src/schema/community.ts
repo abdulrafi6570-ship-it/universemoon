@@ -3,9 +3,11 @@ import { pgTable, serial, text, boolean, integer, timestamp, jsonb } from "drizz
 export const storiesTable = pgTable("um_stories", {
   id: serial("id").primaryKey(),
   username: text("username").notNull(),
-  content: text("content").notNull(),
+  content: text("content").notNull().default(""),
   emoji: text("emoji").default("✨"),
   color: text("color").default("#ffffff"),
+  mediaUrl: text("media_url"),
+  mediaType: text("media_type"),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
