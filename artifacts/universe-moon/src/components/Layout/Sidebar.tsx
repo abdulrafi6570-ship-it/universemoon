@@ -4,7 +4,7 @@ import { useAuthStore } from '@/hooks/use-auth';
 import {
   Home, Users, UserMinus, Image as ImageIcon, BookOpen, Link as LinkIcon,
   MessageCircle, Ghost, Music, Key, UsersRound, Video, Gamepad2, Trophy,
-  Info, LogOut
+  Info, LogOut, CheckSquare, Tv
 } from 'lucide-react';
 import { useLogout } from '@workspace/api-client-react';
 
@@ -20,11 +20,13 @@ const NAV_ITEMS = [
   { section: 'Sosial' },
   { label: 'Chat', href: '/chat', icon: MessageCircle },
   { label: 'NGL / Pesan', href: '/ngl', icon: Ghost },
+  { label: 'Voting & Polling', href: '/voting', icon: CheckSquare },
   { label: 'Musik', href: '/music', icon: Music },
   { label: 'Vault Rahasia', href: '/vault', icon: Key },
   { section: 'Ekstra' },
   { label: 'OpMem', href: '/opmem', icon: UsersRound },
   { label: 'MEP Videos', href: '/mep', icon: Video },
+  { label: 'Drakor Favorit', href: '/drakor', icon: Tv },
   { label: 'Games', href: '/games', icon: Gamepad2 },
   { label: 'Leaderboard', href: '/leaderboard', icon: Trophy },
   { section: 'System' },
@@ -52,7 +54,7 @@ export function Sidebar() {
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-sm tracking-tight text-glow">Universe Moon</span>
-          <span className="text-xs text-muted-foreground">[Um] · Est. 2025</span>
+          <span className="text-xs text-muted-foreground">[Um] · Est. 30/11/2025</span>
         </div>
       </div>
 

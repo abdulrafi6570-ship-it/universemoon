@@ -7,6 +7,29 @@ import { useSound } from '@/hooks/use-sound';
 
 const API = (p: string) => `/api/games${p}`;
 
+const ROLES_20 = [
+  { name: 'Detektif', desc: 'Amati semua clue dengan teliti. Catat yang aneh!' },
+  { name: 'Provokator', desc: 'Buat pemain lain saling curiga satu sama lain.' },
+  { name: 'Diplomatis', desc: 'Tetap netral, dengarkan semua pihak sebelum vote.' },
+  { name: 'Paranoid', desc: 'Curigai siapa saja — bahkan yang paling polos sekalipun.' },
+  { name: 'Si Cerdik', desc: 'Berikan clue yang membingungkan agar Imposter kebingungan.' },
+  { name: 'Bluffer', desc: 'Pura-pura tidak tahu, padahal kamu sudah tahu jawabannya.' },
+  { name: 'Mata-Mata', desc: 'Perhatikan gerakan dan ekspresi pemain lain dengan cermat.' },
+  { name: 'Si Bawel', desc: 'Terus bicara dan beri banyak clue agar Imposter terbongkar.' },
+  { name: 'Pendiam', desc: 'Bicara minimal, amati maksimal. Simpan kesimpulanmu.' },
+  { name: 'Penganalisa', desc: 'Analisis setiap clue secara logis dan sistematis.' },
+  { name: 'Aktor', desc: 'Jika Imposter, pura-pura tidak tahu kata warga dengan meyakinkan!' },
+  { name: 'Kamuflase', desc: 'Berbaur dengan grup agar tidak terlihat mencurigakan.' },
+  { name: 'Manipulator', desc: 'Arahkan voting ke orang lain — berguna untuk Imposter!' },
+  { name: 'Si Polos', desc: 'Jujur total dengan clue, percaya penuh pada teman-teman.' },
+  { name: 'Spekulan', desc: 'Buat teori dan spekulasi berdasarkan semua clue yang ada.' },
+  { name: 'Agen Rahasia', desc: 'Jaga identitas aslimu sampai saat-saat terakhir voting.' },
+  { name: 'Pemimpin', desc: 'Kendalikan alur diskusi grup agar tetap terarah.' },
+  { name: "Devil's Advocate", desc: 'Selalu bela yang tertuduh agar diskusi tetap fair.' },
+  { name: 'Observator', desc: 'Diam tapi perhatikan semuanya. Suaramu sangat berharga.' },
+  { name: 'Provokator Terselubung', desc: 'Tunjukkan kepercayaan ke semua orang, tapi tetap waspada.' },
+];
+
 interface Player { username: string; isImposter: boolean; word: string; role: string; eliminated: boolean; votes: number; hasGivenClue: boolean; }
 interface Clue { username: string; clue: string; round: number; }
 interface RoomData {
@@ -161,10 +184,26 @@ export default function ImposterGame() {
         </div>
       )}
       <div className="glass rounded-2xl p-5 space-y-2">
-        <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3">📖 Cara Main</h3>
+        <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3">Cara Main</h3>
         {['Host buat room, share kode ke teman','Semua join, host pilih kategori','Setiap pemain dapat kata rahasia (Imposter dapat kata berbeda!)','Berikan clue secara bergiliran 2 putaran','Vote siapa Imposternya','Tebak benar = Warga menang, tebak salah = Imposter menang!'].map((s, i) => (
           <div key={i} className="flex gap-2 text-sm text-muted-foreground"><span className="text-primary font-bold shrink-0">{i+1}.</span> {s}</div>
         ))}
+      </div>
+
+      <div className="glass rounded-2xl p-5">
+        <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3">20 Peran Rahasia</h3>
+        <p className="text-xs text-muted-foreground mb-4">Setiap pemain mendapat peran acak yang menentukan strateginya!</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {ROLES_20.map((r, i) => (
+            <div key={i} className="flex gap-3 bg-white/5 rounded-xl p-3">
+              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">{i+1}</div>
+              <div>
+                <p className="text-sm font-semibold">{r.name}</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">{r.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

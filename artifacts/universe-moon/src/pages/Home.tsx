@@ -6,17 +6,18 @@ import { Camera, Book, MessageSquare, Ghost, Music, Key, Moon, Users, Gamepad2, 
 import { useTimePhase } from '@/components/Theme/DynamicSky';
 import { useToast } from '@/hooks/use-toast';
 
+const TW = 'https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg';
 const EVENT_TYPES = [
-  { key: 'rain', label: 'Hujan 🌧️', icon: '🌧️' },
-  { key: 'coin_rain', label: 'Hujan Koin 🪙', icon: '🪙' },
-  { key: 'fireworks', label: 'Kembang Api 🎆', icon: '🎆' },
-  { key: 'confetti', label: 'Confetti 🎊', icon: '🎊' },
-  { key: 'meteor', label: 'Meteor ☄️', icon: '☄️' },
-  { key: 'stars', label: 'Bintang Jatuh ⭐', icon: '⭐' },
-  { key: 'snow', label: 'Salju ❄️', icon: '❄️' },
-  { key: 'hearts', label: 'Hujan Hati 💕', icon: '💕' },
-  { key: 'moon_rise', label: 'Moon Rise 🌕', icon: '🌕' },
-  { key: 'galaxy_blast', label: 'Galaxy Blast 🌌', icon: '🌌' },
+  { key: 'rain',         label: 'Hujan',        src: `${TW}/1f327.svg` },
+  { key: 'coin_rain',   label: 'Hujan Koin',   src: `${TW}/1fa99.svg` },
+  { key: 'fireworks',   label: 'Kembang Api',  src: `${TW}/1f386.svg` },
+  { key: 'confetti',    label: 'Confetti',     src: `${TW}/1f38a.svg` },
+  { key: 'meteor',      label: 'Meteor',       src: `${TW}/2604.svg`  },
+  { key: 'stars',       label: 'Bintang',      src: `${TW}/2b50.svg`  },
+  { key: 'snow',        label: 'Salju',        src: `${TW}/2744.svg`  },
+  { key: 'hearts',      label: 'Hati',         src: `${TW}/1f495.svg` },
+  { key: 'moon_rise',   label: 'Moon Rise',    src: `${TW}/1f315.svg` },
+  { key: 'galaxy_blast',label: 'Galaxy',       src: `${TW}/1f30c.svg` },
 ];
 
 export default function Home() {
@@ -80,10 +81,13 @@ export default function Home() {
         <div className="w-20 h-20 mb-5 relative z-10 rounded-full bg-white/8 border border-white/15 flex items-center justify-center shadow-[0_0_60px_rgba(255,255,255,0.12)]">
           <Moon className="w-10 h-10 text-white fill-white/20" />
         </div>
-        <p className="text-sm text-muted-foreground mb-2 relative z-10">{icon} {greetings[phase]}, <strong className="text-white">{user?.username}</strong>!</p>
+        <p className="text-sm text-muted-foreground mb-2 relative z-10 flex items-center justify-center gap-1.5">
+          <img src={icon} alt={phase} className="w-5 h-5 inline" />
+          {greetings[phase]}, <strong className="text-white">{user?.username}</strong>!
+        </p>
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-glow mb-3 relative z-10">Universe Moon</h1>
         <p className="text-muted-foreground text-sm max-w-sm relative z-10 leading-relaxed">
-          Tempat kenangan, cerita, dan ikatan yang tak pernah pudar. UM berdiri sejak 27 November 2025. 🌙
+          Tempat kenangan, cerita, dan ikatan yang tak pernah pudar. UM berdiri sejak 30 November 2025.
         </p>
       </motion.div>
 
@@ -107,7 +111,7 @@ export default function Home() {
       <div className="grid grid-cols-2 gap-3">
         <div className="glass rounded-2xl p-4 flex items-center gap-3">
           <Star className="w-8 h-8 text-yellow-400 shrink-0" />
-          <div><p className="text-xs text-muted-foreground">Didirikan</p><p className="font-bold">27 Nov 2025</p></div>
+          <div><p className="text-xs text-muted-foreground">Didirikan</p><p className="font-bold">30 Nov 2025</p></div>
         </div>
         <div className="glass rounded-2xl p-4 flex items-center gap-3">
           <Heart className="w-8 h-8 text-pink-400 shrink-0" />
@@ -145,8 +149,8 @@ export default function Home() {
             {EVENT_TYPES.map(ev => (
               <button key={ev.key} onClick={() => triggerEvent(ev.key)} disabled={triggeringEvent}
                 className="flex flex-col items-center gap-1 p-3 glass rounded-xl hover:bg-white/10 transition-colors disabled:opacity-50 group">
-                <span className="text-2xl group-hover:scale-125 transition-transform">{ev.icon}</span>
-                <span className="text-[10px] text-muted-foreground text-center leading-tight">{ev.label.split(' ')[0]}</span>
+                <img src={ev.src} alt={ev.label} className="w-7 h-7 group-hover:scale-125 transition-transform" />
+                <span className="text-[10px] text-muted-foreground text-center leading-tight">{ev.label}</span>
               </button>
             ))}
           </div>

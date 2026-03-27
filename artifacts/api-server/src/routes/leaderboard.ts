@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { usersTable } from "@workspace/db";
+import { usersTable, gameLeaderboardTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
 import { eq } from "drizzle-orm";
 
@@ -30,6 +30,15 @@ router.get("/", async (req, res) => {
 
   const leaderboard = users.map((u, i) => ({ ...u, rank: i + 1, level: getLevel(u.xp) }));
   return res.json(leaderboard);
+});
+
+router.get("/games", async (req, res) => {
+  try {
+    const rows = await db.select().from(gameLeaderboardTable).orderBy(desc(gameLeaderboardTable.wins));
+    return res.json(rows);
+  } catch {
+    return res.json([]);
+  }
 });
 
 router.post("/reset", async (req, res) => {

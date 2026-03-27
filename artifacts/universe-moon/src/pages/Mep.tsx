@@ -12,7 +12,8 @@ function getYouTubeId(url: string) {
 }
 
 function VideoPlayer({ mep, onClose }: { mep: any; onClose: () => void }) {
-  const ytId = mep.url ? getYouTubeId(mep.url) : null;
+  const vid = mep.videoUrl || mep.url;
+  const ytId = vid ? getYouTubeId(vid) : null;
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
@@ -28,7 +29,7 @@ function VideoPlayer({ mep, onClose }: { mep: any; onClose: () => void }) {
         {ytId ? (
           <iframe src={`https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`}
             allow="autoplay; encrypted-media" className="w-full aspect-video" title={mep.title} />
-        ) : mep.fileUrl ? (
+        ) : (mep.fileUrl) ? (
           <video src={mep.fileUrl} controls autoPlay className="w-full aspect-video bg-black" />
         ) : (
           <div className="flex items-center justify-center h-48 text-muted-foreground">
@@ -110,7 +111,7 @@ export default function MepPage() {
       }
       await fetch('/api/mep', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, fileUrl, participants, addedBy: user?.username }),
+        body: JSON.stringify({ title: form.title, description: form.description, videoUrl: form.url, eventDate: form.eventDate, fileUrl, participants, createdBy: user?.username }),
       });
       qc.invalidateQueries({ queryKey: ['mep'] });
       setForm({ title: '', description: '', url: '', eventDate: '' });
@@ -188,7 +189,8 @@ export default function MepPage() {
           </div>
         )}
         {meps.map((mep: any, i: number) => {
-          const ytId = mep.url ? getYouTubeId(mep.url) : null;
+          const vid = mep.videoUrl || mep.url;
+          const ytId = vid ? getYouTubeId(vid) : null;
           const thumb = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null;
           const partList: any[] = mep.participants || [];
           return (

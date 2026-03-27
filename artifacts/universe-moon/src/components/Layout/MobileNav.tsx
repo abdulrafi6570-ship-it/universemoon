@@ -63,6 +63,8 @@ export function MobileNav() {
                 <Link href="/music" onClick={() => setIsOpen(false)} className="glass-hover p-4 rounded-xl text-center">Music</Link>
                 <Link href="/vault" onClick={() => setIsOpen(false)} className="glass-hover p-4 rounded-xl text-center">Vault</Link>
                 <Link href="/leaderboard" onClick={() => setIsOpen(false)} className="glass-hover p-4 rounded-xl text-center">Leaderboard</Link>
+                <Link href="/voting" onClick={() => setIsOpen(false)} className="glass-hover p-4 rounded-xl text-center">Voting</Link>
+                <Link href="/drakor" onClick={() => setIsOpen(false)} className="glass-hover p-4 rounded-xl text-center">Drakor</Link>
               </div>
             </motion.div>
           </>

@@ -28,6 +28,8 @@ import WerewolfGame from "@/pages/WerewolfGame";
 import LudoGame from "@/pages/LudoGame";
 import DraculaGame from "@/pages/DraculaGame";
 import About from "@/pages/About";
+import Voting from "@/pages/Voting";
+import Drakor from "@/pages/Drakor";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -101,6 +103,12 @@ function Router() {
         <Layout><DraculaGame /></Layout>
       </Route>
       
+      <Route path="/voting">
+        <Layout><Voting /></Layout>
+      </Route>
+      <Route path="/drakor">
+        <Layout><Drakor /></Layout>
+      </Route>
       <Route path="/about">
         <Layout><About /></Layout>
       </Route>
@@ -118,7 +126,7 @@ function SeedData() {
       .then(data => {
         if (Array.isArray(data) && data.length === 0) {
           const starterMembers = [
-            { name: 'iyuyun', nickname: 'Founder', role: 'admin', isActive: true, bio: 'Creator of the Universe', joinDate: '2025-11-27' },
+            { name: 'iyuyun', nickname: 'Founder', role: 'admin', isActive: true, bio: 'Creator of the Universe', joinDate: '2025-11-30' },
             { name: 'Alice', nickname: 'Al', role: 'member', isActive: true, bio: 'Stargazer', joinDate: '2025-11-28' },
             { name: 'Bob', nickname: 'Bobby', role: 'member', isActive: true, bio: 'Moonwalker', joinDate: '2025-11-28' },
             { name: 'Charlie', nickname: 'Chuck', role: 'member', isActive: true, bio: 'Comet Chaser', joinDate: '2025-11-29' },
