@@ -36,6 +36,10 @@ export default function Chat() {
   const [showDmList, setShowDmList] = useState(false);
   const [tab, setTab] = useState<'group'|'dm'>('group');
   const endRef = useRef<HTMLDivElement>(null);
+  const msgsBoxRef = useRef<HTMLDivElement>(null);
+  const initializedRef = useRef(false);
+  const prevMsgCountRef = useRef(0);
+  const prevDmCountRef = useRef(0);
   const isAdmin = user?.role === 'admin';
 
   const fetchMessages = useCallback(async () => {
@@ -81,9 +85,35 @@ export default function Chat() {
     }
   }, [dmPartner, fetchDmMessages]);
 
+  const scrollToBottom = (smooth = true) => {
+    if (!msgsBoxRef.current) return;
+    msgsBoxRef.current.scrollTo({
+      top: msgsBoxRef.current.scrollHeight,
+      behavior: smooth ? 'smooth' : 'instant',
+    });
+  };
+
+  // Scroll only on NEW messages (not on first load)
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, dmMessages]);
+    if (messages.length === 0) return;
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      prevMsgCountRef.current = messages.length;
+      return;
+    }
+    if (messages.length > prevMsgCountRef.current) {
+      scrollToBottom();
+    }
+    prevMsgCountRef.current = messages.length;
+  }, [messages]);
+
+  useEffect(() => {
+    if (dmMessages.length === 0) return;
+    if (dmMessages.length > prevDmCountRef.current) {
+      scrollToBottom();
+    }
+    prevDmCountRef.current = dmMessages.length;
+  }, [dmMessages]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,6 +140,8 @@ export default function Chat() {
         });
         fetchMessages();
       }
+      // Always scroll after user sends
+      setTimeout(() => scrollToBottom(), 200);
     } catch (err) { toast({ title: 'Gagal kirim', variant: 'destructive' }); }
   };
 
@@ -143,7 +175,7 @@ export default function Chat() {
   const displayMessages = tab === 'dm' ? dmMessages : messages;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-3 animate-in fade-in max-w-2xl mx-auto w-full">
+    <div className="flex h-[calc(100dvh-13rem)] md:h-[calc(100dvh-9rem)] gap-3 animate-in fade-in max-w-2xl mx-auto w-full">
       {/* DM List Sidebar */}
       <AnimatePresence>
         {showDmList && (
@@ -202,7 +234,7 @@ export default function Chat() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-1 hide-scrollbar" onClick={() => setShowEmoji(null)}>
+        <div ref={msgsBoxRef} className="flex-1 overflow-y-auto p-4 space-y-1 hide-scrollbar" onClick={() => setShowEmoji(null)}>
           {displayMessages.map((msg: any, i: number) => {
             const sender = msg.sender || msg.fromUsername;
             const isMe = sender === user?.username;
