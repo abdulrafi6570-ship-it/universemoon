@@ -4,7 +4,9 @@ import { useAuthStore } from '@/hooks/use-auth';
 import {
   Home, Users, UserMinus, Image as ImageIcon, BookOpen, Link as LinkIcon,
   MessageCircle, Ghost, Music, Key, UsersRound, Video, Gamepad2, Trophy,
-  Info, LogOut, CheckSquare, Tv, ShieldCheck
+  Info, LogOut, CheckSquare, Tv, ShieldCheck, User, Cake, BookMarked,
+  Zap, BookHeart, Megaphone, SmilePlus, Package, HelpCircle, ListMusic,
+  Laugh, Quote, PenSquare, Sticker, Medal, BarChart3, Flag, Clock
 } from 'lucide-react';
 import { useLogout } from '@workspace/api-client-react';
 
@@ -13,20 +15,41 @@ const NAV_ITEMS = [
   { label: 'Home', href: '/', icon: Home },
   { label: 'Members', href: '/members', icon: Users },
   { label: 'Ex-Members', href: '/ex-members', icon: UserMinus },
+  { label: 'Profil Saya', href: '/profile', icon: User },
   { section: 'Kenangan' },
   { label: 'Galeri Foto', href: '/gallery', icon: ImageIcon },
-  { label: 'Memories', href: '/memories', icon: BookOpen },
+  { label: 'Memories', href: '/memories', icon: BookMarked },
   { label: 'Links', href: '/links', icon: LinkIcon },
+  { label: 'Milestones', href: '/milestones', icon: Flag },
+  { label: 'Statistik Grup', href: '/stats', icon: BarChart3 },
   { section: 'Sosial' },
   { label: 'Chat', href: '/chat', icon: MessageCircle },
   { label: 'NGL / Pesan', href: '/ngl', icon: Ghost },
-  { label: 'Voting & Polling', href: '/voting', icon: CheckSquare },
+  { label: 'Shoutout Board', href: '/shoutout', icon: Megaphone },
+  { label: 'Story Harian', href: '/story', icon: BookOpen },
+  { label: 'Moodboard', href: '/moodboard', icon: SmilePlus },
+  { label: 'Q&A Anonim', href: '/qa', icon: HelpCircle },
+  { label: 'Voting & Poll', href: '/voting', icon: CheckSquare },
+  { section: 'Konten' },
+  { label: 'Quote of the Day', href: '/quote', icon: Quote },
+  { label: 'Cerita & Fanfic', href: '/fanfic', icon: PenSquare },
+  { label: 'Meme Board', href: '/meme', icon: Laugh },
+  { label: 'Playlist Bersama', href: '/playlist', icon: ListMusic },
+  { label: 'Stiker Kustom', href: '/stickers', icon: Sticker },
+  { section: 'Spesial' },
+  { label: 'Surat Rahasia', href: '/capsule', icon: Package },
+  { label: 'Mini Diary Grup', href: '/diary', icon: BookHeart },
+  { label: 'Birthday Tracker', href: '/birthday', icon: Cake },
+  { label: 'Hall of Fame', href: '/hall-of-fame', icon: Medal },
+  { section: 'Media' },
   { label: 'Musik', href: '/music', icon: Music },
+  { label: 'MEP Videos', href: '/mep', icon: Video },
+  { label: 'Drakor Favorit', href: '/drakor', icon: Tv },
   { label: 'Vault Rahasia', href: '/vault', icon: Key },
   { section: 'Ekstra' },
   { label: 'OpMem', href: '/opmem', icon: UsersRound },
-  { label: 'MEP Videos', href: '/mep', icon: Video },
-  { label: 'Drakor Favorit', href: '/drakor', icon: Tv },
+  { label: 'Peraturan & FAQ', href: '/rules', icon: BookOpen },
+  { label: 'Aktivitas', href: '/activity', icon: Zap },
   { label: 'Games', href: '/games', icon: Gamepad2 },
   { label: 'Leaderboard', href: '/leaderboard', icon: Trophy },
   { section: 'System' },
@@ -59,7 +82,7 @@ export function Sidebar() {
       </div>
 
       {user && (
-        <div className="mb-6 px-3 py-3 glass rounded-xl flex items-center gap-3">
+        <Link href="/profile" className="mb-6 px-3 py-3 glass rounded-xl flex items-center gap-3 hover:bg-white/5 transition-colors">
           {user.avatarUrl ? (
              <img src={user.avatarUrl} alt={user.username} className="w-8 h-8 rounded-full object-cover" />
           ) : (
@@ -71,10 +94,11 @@ export function Sidebar() {
             <span className="text-xs font-semibold truncate">{user.username}</span>
             <span className="text-[10px] text-muted-foreground capitalize">{user.role}</span>
           </div>
-        </div>
+          <User className="w-3 h-3 text-muted-foreground/60" />
+        </Link>
       )}
 
-      <nav className="flex-1 flex flex-col gap-1">
+      <nav className="flex-1 flex flex-col gap-0.5">
         {NAV_ITEMS.map((item, idx) => {
           if (item.section) {
             return (
@@ -92,14 +116,14 @@ export function Sidebar() {
               key={item.href} 
               href={item.href!}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group",
+                "flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 group",
                 isActive 
                   ? "bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10" 
                   : "text-muted-foreground hover:text-white hover:bg-white/5 border border-transparent"
               )}
             >
-              <Icon className={cn("w-4 h-4", isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-white")} />
-              <span>{item.label}</span>
+              <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-white")} />
+              <span className="truncate">{item.label}</span>
             </Link>
           );
         })}

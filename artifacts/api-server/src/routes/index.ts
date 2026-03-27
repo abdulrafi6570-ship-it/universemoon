@@ -13,6 +13,9 @@ import uploadRouter from "./upload";
 import adminEventsRouter from "./admin-events";
 import pollsRouter from "./polls";
 import drakorRouter from "./drakor";
+import communitySocialRouter from "./community-social";
+import communityContentRouter from "./community-content";
+import communityDataRouter from "./community-data";
 
 const router: IRouter = Router();
 
@@ -30,5 +33,8 @@ router.use("/upload", uploadRouter);
 router.use("/events", adminEventsRouter);
 router.use("/polls", pollsRouter);
 router.use("/drakor", drakorRouter);
+router.use(communitySocialRouter);
+router.use(communityContentRouter);
+router.use(communityDataRouter);
 
 export default router;

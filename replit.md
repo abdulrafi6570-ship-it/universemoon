@@ -37,7 +37,8 @@ artifacts-monorepo/
 │           ├── users.ts       # usersTable, sessionsTable
 │           ├── members.ts     # membersTable
 │           ├── chat.ts        # chatMessagesTable, nglMessagesTable
-│           └── content.ts     # ALL other tables (photos, games, events, polls, etc.)
+│           ├── content.ts     # ALL other tables (photos, games, events, polls, etc.)
+│           └── community.ts   # New community tables (stories, shoutouts, moods, etc.)
 ├── scripts/                  # Utility scripts
 └── pnpm-workspace.yaml
 ```
@@ -76,6 +77,25 @@ artifacts-monorepo/
 | `/drakor` | Drakor | K-drama favorites per member |
 | `/about` | About | About page |
 | `/admin` | Admin | Admin-only panel: member CRUD, kick, restore ex-members |
+| `/profile` | Profile | Member profile: mood, XP, streak, shoutouts received |
+| `/profile/:username` | Profile | Public view of any member's profile |
+| `/birthday` | Birthday | Birthday tracker with countdown |
+| `/rules` | Rules | Peraturan & FAQ (admin manages) |
+| `/activity` | Activity | Recent activity feed |
+| `/story` | Story | 24-hour stories (members only can post) |
+| `/shoutout` | Shoutout | Shoutout board with reactions |
+| `/moodboard` | Moodboard | Member moods with emoji + color |
+| `/capsule` | Capsule | Time capsule letters (reveal on date) |
+| `/qa` | QA | Anonymous Q&A per member |
+| `/playlist` | Playlist | Playlist voting (guests can vote) |
+| `/meme` | Meme | Meme board with reactions (members upload) |
+| `/quote` | Quote | Quote of the Day (admin activates) |
+| `/fanfic` | Fanfic | Cerita & fanfic with genres, likes, views |
+| `/stickers` | Stickers | Custom sticker collection (admin manages) |
+| `/hall-of-fame` | HallOfFame | Top XP, streak, game wins |
+| `/stats` | Stats | Group statistics dashboard |
+| `/milestones` | Milestones | Group milestones timeline (admin manages) |
+| `/diary` | Diary | Mini group diary (daily Q + member answers) |
 
 ### API Routes (all prefixed `/api`)
 - `/auth` — login, logout, me
@@ -95,6 +115,25 @@ artifacts-monorepo/
 - `/upload` — file upload (photos, videos, audio, avatars)
 - `/polls` — community voting polls + comments
 - `/drakor` — K-drama favorites per member
+- `/stories` — 24hr stories (POST + DELETE)
+- `/shoutouts` — shoutout board + reactions
+- `/moods` — member moods (upsert per username)
+- `/memes` — meme board + reactions
+- `/quotes` — quote of the day + activate
+- `/fanfics` — cerita & fanfic + likes + views
+- `/capsules` — time capsule (reveal by date)
+- `/qa` — anonymous Q&A + inbox + answer
+- `/playlist-votes` — playlist voting
+- `/rules` — rules/FAQ CRUD
+- `/custom-stickers` — custom sticker collection
+- `/milestones` — group milestones
+- `/diary` — daily group diary + entries + reactions
+- `/birthdays` — birthday tracker
+- `/stats` — group statistics (computed)
+- `/hall-of-fame` — top XP, streak, game wins
+- `/activity` — recent activity feed (computed)
+- `/profile/:username` — aggregated member profile
+- `/users/seen` — update lastSeen + streak tracking
 
 ### Database Tables (Drizzle / PostgreSQL)
 - `um_users` — auth users with tokens
@@ -122,6 +161,22 @@ artifacts-monorepo/
 - `um_admin_events` — admin-triggered visual events
 - `um_polls` — community polls (options JSON + comments JSON)
 - `um_drakor` — K-drama favorites per member (dramas JSON)
+- `um_stories` — 24hr stories (expires_at auto)
+- `um_shoutouts` — shoutouts with reactions JSON
+- `um_moods` — one mood per member (unique username)
+- `um_capsules` — time capsule (reveal_date, is_revealed)
+- `um_qa` — anonymous Q&A (target_member, question, answer)
+- `um_playlist` — playlist songs with votes JSON
+- `um_memes` — meme board with reactions JSON
+- `um_quotes` — quotes with is_active flag
+- `um_fanfics` — fanfics with likes JSON + views counter
+- `um_custom_stickers` — admin-managed sticker collection
+- `um_milestones` — group milestones with date + icon
+- `um_diary` — daily diary questions
+- `um_diary_entries` — member answers to diary questions
+- `um_birthdays` — member birthdays (unique per username)
+- `um_rules` — rules/FAQ with categories + ordering
+- `um_users` now has: `last_seen`, `streak`, `streak_updated_at`
 
 ### Dynamic UI
 - `DynamicSky.tsx` — animated starfield + particle system

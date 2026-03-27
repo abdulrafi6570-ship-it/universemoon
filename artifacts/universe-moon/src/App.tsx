@@ -32,6 +32,26 @@ import Voting from "@/pages/Voting";
 import Drakor from "@/pages/Drakor";
 import Admin from "@/pages/Admin";
 
+// New community pages
+import Profile from "@/pages/Profile";
+import Birthday from "@/pages/Birthday";
+import Rules from "@/pages/Rules";
+import Activity from "@/pages/Activity";
+import Story from "@/pages/Story";
+import Shoutout from "@/pages/Shoutout";
+import Moodboard from "@/pages/Moodboard";
+import Capsule from "@/pages/Capsule";
+import QA from "@/pages/QA";
+import Playlist from "@/pages/Playlist";
+import Meme from "@/pages/Meme";
+import Quote from "@/pages/Quote";
+import Fanfic from "@/pages/Fanfic";
+import Stickers from "@/pages/Stickers";
+import HallOfFame from "@/pages/HallOfFame";
+import Stats from "@/pages/Stats";
+import Milestones from "@/pages/Milestones";
+import Diary from "@/pages/Diary";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -117,6 +137,65 @@ function Router() {
         <Layout><Admin /></Layout>
       </Route>
 
+      {/* Community pages */}
+      <Route path="/profile">
+        <Layout><Profile /></Layout>
+      </Route>
+      <Route path="/profile/:username">
+        <Layout><Profile /></Layout>
+      </Route>
+      <Route path="/birthday">
+        <Layout><Birthday /></Layout>
+      </Route>
+      <Route path="/rules">
+        <Layout><Rules /></Layout>
+      </Route>
+      <Route path="/activity">
+        <Layout><Activity /></Layout>
+      </Route>
+      <Route path="/story">
+        <Layout><Story /></Layout>
+      </Route>
+      <Route path="/shoutout">
+        <Layout><Shoutout /></Layout>
+      </Route>
+      <Route path="/moodboard">
+        <Layout><Moodboard /></Layout>
+      </Route>
+      <Route path="/capsule">
+        <Layout><Capsule /></Layout>
+      </Route>
+      <Route path="/qa">
+        <Layout><QA /></Layout>
+      </Route>
+      <Route path="/playlist">
+        <Layout><Playlist /></Layout>
+      </Route>
+      <Route path="/meme">
+        <Layout><Meme /></Layout>
+      </Route>
+      <Route path="/quote">
+        <Layout><Quote /></Layout>
+      </Route>
+      <Route path="/fanfic">
+        <Layout><Fanfic /></Layout>
+      </Route>
+      <Route path="/stickers">
+        <Layout><Stickers /></Layout>
+      </Route>
+      <Route path="/hall-of-fame">
+        <Layout><HallOfFame /></Layout>
+      </Route>
+      <Route path="/stats">
+        <Layout><Stats /></Layout>
+      </Route>
+      <Route path="/milestones">
+        <Layout><Milestones /></Layout>
+      </Route>
+      <Route path="/diary">
+        <Layout><Diary /></Layout>
+      </Route>
+
       <Route component={NotFound} />
     </Switch>
   );
@@ -124,7 +203,6 @@ function Router() {
 
 function SeedData() {
   useEffect(() => {
-    // Seed initial members if empty
     fetch('/api/members')
       .then(res => res.json())
       .then(data => {
@@ -153,7 +231,21 @@ function SeedData() {
 
 function AppInit() {
   const initAuth = useAuthStore((s) => s.initAuth);
+  const { user } = useAuthStore();
+  
   useEffect(() => { initAuth(); }, []);
+
+  // Update lastSeen on load
+  useEffect(() => {
+    if (user?.username) {
+      fetch('/api/users/seen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user.username }),
+      }).catch(() => {});
+    }
+  }, [user?.username]);
+
   return null;
 }
 

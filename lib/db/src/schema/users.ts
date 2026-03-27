@@ -13,6 +13,9 @@ export const usersTable = pgTable("um_users", {
   isBanned: boolean("is_banned").notNull().default(false),
   loginAttempts: integer("login_attempts").notNull().default(0),
   lockUntil: timestamp("lock_until"),
+  lastSeen: timestamp("last_seen"),
+  streak: integer("streak").notNull().default(0),
+  streakUpdatedAt: timestamp("streak_updated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
