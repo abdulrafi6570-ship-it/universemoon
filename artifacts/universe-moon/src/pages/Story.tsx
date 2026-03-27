@@ -269,8 +269,8 @@ export default function Story() {
 
               {(user?.username === story.username || user?.role === 'admin') && (
                 <button
-                  onClick={() => deleteMutation.mutate(story.id)}
-                  className="absolute top-3 right-3 p-1.5 glass rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-400"
+                  onClick={() => { if (confirm('Hapus story ini?')) deleteMutation.mutate(story.id); }}
+                  className="absolute top-3 right-3 p-1.5 bg-black/50 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-black/80 transition-all"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
