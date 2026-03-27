@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { DynamicSky } from '../Theme/DynamicSky';
 import { MusicBar } from '../MusicBar';
+import { AzanPlayer } from '../AzanPlayer';
 import { useAuthStore } from '@/hooks/use-auth';
 import { Redirect } from 'wouter';
 import { Clock, Volume2, VolumeX } from 'lucide-react';
@@ -37,9 +38,12 @@ export function Layout({ children }: { children: ReactNode }) {
             <Clock className="w-4 h-4 text-muted-foreground" />
             <span className="font-mono text-sm tracking-wider">{time.toLocaleTimeString([], { hour12: false })}</span>
           </div>
-          <button onClick={toggleSound} className="p-2 rounded-full hover:bg-white/10 transition-colors">
-            {soundEnabled ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
-          </button>
+          <div className="flex items-center gap-1">
+            <AzanPlayer />
+            <button onClick={toggleSound} className="p-2 rounded-full hover:bg-white/10 transition-colors">
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
+            </button>
+          </div>
         </header>
         <div className="p-4 md:p-8 max-w-6xl mx-auto w-full">
           {children}
