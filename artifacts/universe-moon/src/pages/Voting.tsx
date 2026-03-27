@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/hooks/use-auth';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, MessageSquare, CheckCircle, Lock, Send, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, MessageSquare, CheckCircle, Lock, Send, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { formatTime } from '@/lib/utils';
@@ -19,6 +19,37 @@ export default function Voting() {
   const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set());
   const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
   const [submittingComment, setSubmittingComment] = useState<number | null>(null);
+
+  // Guest name: stored in localStorage, passed explicitly to avoid stale closure
+  const [guestName, setGuestName] = useState(() => localStorage.getItem('um_guest_name') || '');
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [pendingAction, setPendingAction] = useState<((name: string) => void) | null>(null);
+
+  const effectiveName = user?.username || (guestName ? `Tamu_${guestName}` : '');
+
+  const requireName = (action: (name: string) => void) => {
+    if (effectiveName) {
+      action(effectiveName);
+    } else {
+      setPendingAction(() => action);
+      setShowNamePrompt(true);
+    }
+  };
+
+  const confirmGuestName = () => {
+    const saved = nameInput.trim();
+    if (!saved) return;
+    const fullName = `Tamu_${saved}`;
+    localStorage.setItem('um_guest_name', saved);
+    setGuestName(saved);
+    setShowNamePrompt(false);
+    setNameInput('');
+    if (pendingAction) {
+      pendingAction(fullName);
+      setPendingAction(null);
+    }
+  };
 
   const { data: polls = [] } = useQuery({
     queryKey: ['polls'],
@@ -42,26 +73,33 @@ export default function Voting() {
     }
   };
 
-  const handleVote = async (pollId: number, optionIndex: number) => {
-    if (!user || isGuest) return toast({ title: 'Login untuk vote!', variant: 'destructive' });
+  const doVote = async (pollId: number, optionIndex: number, name: string) => {
     await fetch(`/api/polls/${pollId}/vote`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user.username, optionIndex }),
+      body: JSON.stringify({ username: name, optionIndex }),
     });
     qc.invalidateQueries({ queryKey: ['polls'] });
   };
 
-  const handleComment = async (pollId: number) => {
+  const handleVote = (pollId: number, optionIndex: number) => {
+    requireName((name) => doVote(pollId, optionIndex, name));
+  };
+
+  const doComment = async (pollId: number, name: string) => {
     const content = commentInputs[pollId]?.trim();
-    if (!content || !user) return;
+    if (!content) return;
     setSubmittingComment(pollId);
     await fetch(`/api/polls/${pollId}/comment`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user.username, content }),
+      body: JSON.stringify({ username: name, content }),
     });
     setCommentInputs(p => ({ ...p, [pollId]: '' }));
     qc.invalidateQueries({ queryKey: ['polls'] });
     setSubmittingComment(null);
+  };
+
+  const handleComment = (pollId: number) => {
+    requireName((name) => doComment(pollId, name));
   };
 
   const handleDelete = async (pollId: number) => {
@@ -80,12 +118,51 @@ export default function Voting() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in">
-      <div className="flex items-center justify-between">
+      {/* Guest name prompt modal */}
+      <AnimatePresence>
+        {showNamePrompt && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => setShowNamePrompt(false)} />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="glass rounded-3xl p-6 w-full max-w-sm border border-white/20">
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
+                  <User className="w-6 h-6" />
+                </div>
+                <h3 className="font-serif text-xl font-bold text-center mb-1">Siapa namamu?</h3>
+                <p className="text-xs text-muted-foreground text-center mb-4">Nama ini untuk vote &amp; komentar kamu.</p>
+                <input
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && confirmGuestName()}
+                  placeholder="Masukkan nama kamu..."
+                  autoFocus
+                  className="w-full mb-3"
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => setShowNamePrompt(false)} className="flex-1 py-2.5 bg-white/5 rounded-xl text-sm hover:bg-white/10">Batal</button>
+                  <button
+                    onClick={confirmGuestName}
+                    disabled={!nameInput.trim()}
+                    className="flex-1 py-2.5 bg-white text-black rounded-xl text-sm font-semibold disabled:opacity-50"
+                  >Lanjutkan</button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="font-serif text-2xl font-bold">Voting & Polling</h2>
-          <p className="text-muted-foreground text-sm mt-0.5">Suarakan pendapatmu untuk Universe Moon!</p>
+          <h2 className="font-serif text-2xl font-bold">Voting &amp; Polling</h2>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Suarakan pendapatmu untuk Universe Moon!
+            {guestName && <span className="ml-2 text-xs text-primary/80">Hai, Tamu_{guestName}!</span>}
+          </p>
         </div>
-        {!isGuest && (
+        {user && !isGuest && (
           <Dialog open={openCreate} onOpenChange={setOpenCreate}>
             <DialogTrigger asChild>
               <button className="flex items-center gap-2 px-4 py-2 bg-primary/20 border border-primary/30 rounded-xl text-sm font-semibold hover:bg-primary/30 transition-colors">
@@ -97,14 +174,13 @@ export default function Voting() {
               <div className="space-y-3 mt-2">
                 <textarea value={question} onChange={e => setQuestion(e.target.value)}
                   placeholder="Tuliskan pertanyaanmu..." rows={3} maxLength={300}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary resize-none" />
+                  className="w-full resize-none" />
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground uppercase tracking-wider">Pilihan Jawaban</label>
                   {options.map((opt, i) => (
                     <div key={i} className="flex gap-2">
                       <input value={opt} onChange={e => setOptions(prev => prev.map((o, j) => j === i ? e.target.value : o))}
-                        placeholder={`Pilihan ${i + 1}`} maxLength={100}
-                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                        placeholder={`Pilihan ${i + 1}`} maxLength={100} className="flex-1" />
                       {options.length > 2 && (
                         <button onClick={() => setOptions(p => p.filter((_, j) => j !== i))} className="p-2 text-destructive hover:bg-red-900/20 rounded-lg">
                           <Trash2 className="w-4 h-4" />
@@ -119,7 +195,7 @@ export default function Voting() {
                   )}
                 </div>
                 <button onClick={handleCreate} disabled={!question.trim() || options.filter(o => o.trim()).length < 2}
-                  className="w-full py-3 bg-gradient-to-r from-primary to-purple-600 rounded-xl font-semibold disabled:opacity-50">
+                  className="w-full py-3 bg-white text-black rounded-xl font-semibold disabled:opacity-50">
                   Buat Voting
                 </button>
               </div>
@@ -127,6 +203,17 @@ export default function Voting() {
           </Dialog>
         )}
       </div>
+
+      {/* Guest banner */}
+      {!effectiveName && (
+        <div className="glass rounded-2xl p-4 border border-white/10 flex items-center gap-3">
+          <User className="w-5 h-5 text-muted-foreground shrink-0" />
+          <p className="flex-1 text-sm text-muted-foreground">Kamu bisa vote &amp; komentar sebagai tamu tanpa login!</p>
+          <button onClick={() => setShowNamePrompt(true)} className="px-4 py-1.5 bg-white/10 rounded-xl text-sm hover:bg-white/20 shrink-0">
+            Masuk Nama
+          </button>
+        </div>
+      )}
 
       {polls.length === 0 && (
         <div className="glass rounded-2xl p-16 text-center">
@@ -139,19 +226,19 @@ export default function Voting() {
         {polls.map((poll: any) => {
           const opts: any[] = poll.options || [];
           const totalVotes = opts.reduce((s: number, o: any) => s + (o.votes?.length || 0), 0);
-          const myVoteIndex = opts.findIndex((o: any) => o.votes?.includes(user?.username));
+          const myVoteIndex = opts.findIndex((o: any) => o.votes?.includes(effectiveName));
+          const hasVoted = myVoteIndex >= 0;
           const comments: any[] = poll.comments || [];
           const showComments = expandedComments.has(poll.id);
 
           return (
             <motion.div key={poll.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               className="glass rounded-3xl overflow-hidden border border-white/10">
-              {/* Poll Header */}
               <div className="p-5 pb-3">
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex-1">
                     <p className="font-semibold text-base leading-snug">{poll.question}</p>
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
                       <span className="text-xs text-muted-foreground">by {poll.createdBy || 'Admin'}</span>
                       <span className="text-xs text-muted-foreground">{totalVotes} suara</span>
                       {!poll.isOpen && (
@@ -168,21 +255,19 @@ export default function Voting() {
                   )}
                 </div>
 
-                {/* Options */}
                 <div className="space-y-2.5">
                   {opts.map((opt: any, idx: number) => {
                     const voteCount = opt.votes?.length || 0;
                     const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
                     const isMyVote = myVoteIndex === idx;
-                    const hasVoted = myVoteIndex >= 0;
 
                     return (
-                      <button key={idx} onClick={() => poll.isOpen && !isGuest && handleVote(poll.id, idx)}
-                        disabled={!poll.isOpen || isGuest}
+                      <button key={idx}
+                        onClick={() => poll.isOpen && handleVote(poll.id, idx)}
+                        disabled={!poll.isOpen}
                         className={`w-full text-left rounded-2xl overflow-hidden border transition-all relative ${
-                          isMyVote ? 'border-primary/60 bg-primary/10' : 'border-white/10 hover:border-white/25 bg-white/3 hover:bg-white/6'
-                        } ${(!poll.isOpen || isGuest) ? 'cursor-default' : 'cursor-pointer'}`}>
-                        {/* Progress bar bg */}
+                          isMyVote ? 'border-primary/60 bg-primary/10' : 'border-white/10 hover:border-white/25'
+                        } ${!poll.isOpen ? 'cursor-default' : 'cursor-pointer'}`}>
                         {hasVoted && (
                           <div className="absolute inset-0 rounded-2xl overflow-hidden">
                             <motion.div
@@ -200,7 +285,7 @@ export default function Voting() {
                           </div>
                           {hasVoted && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{voteCount} suara</span>
+                              <span>{voteCount}</span>
                               <span className="font-bold text-white/80">{pct}%</span>
                             </div>
                           )}
@@ -211,13 +296,12 @@ export default function Voting() {
                 </div>
               </div>
 
-              {/* Comments Section */}
+              {/* Comments */}
               <div className="border-t border-white/10">
                 <button onClick={() => toggleComments(poll.id)}
                   className="w-full flex items-center justify-between px-5 py-3 text-sm text-muted-foreground hover:text-white hover:bg-white/5 transition-colors">
                   <span className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4" />
-                    {comments.length} komentar
+                    <MessageSquare className="w-4 h-4" /> {comments.length} komentar
                   </span>
                   {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
@@ -236,7 +320,7 @@ export default function Voting() {
                               {c.username?.substring(0, 1).toUpperCase()}
                             </div>
                             <div className="bg-white/5 rounded-2xl px-3 py-2.5 flex-1">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-2 mb-0.5">
                                 <span className="text-xs font-semibold text-primary">{c.username}</span>
                                 {c.createdAt && <span className="text-[10px] text-muted-foreground">{formatTime(c.createdAt)}</span>}
                               </div>
@@ -245,27 +329,27 @@ export default function Voting() {
                           </div>
                         ))}
 
-                        {!isGuest && (
-                          <div className="flex gap-2 mt-3">
-                            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold shrink-0">
-                              {user?.username?.substring(0, 1).toUpperCase()}
-                            </div>
-                            <div className="flex-1 flex gap-2">
-                              <input
-                                value={commentInputs[poll.id] || ''}
-                                onChange={e => setCommentInputs(p => ({ ...p, [poll.id]: e.target.value }))}
-                                onKeyDown={e => e.key === 'Enter' && handleComment(poll.id)}
-                                placeholder="Tulis komentar..."
-                                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                              <button
-                                onClick={() => handleComment(poll.id)}
-                                disabled={!commentInputs[poll.id]?.trim() || submittingComment === poll.id}
-                                className="p-2 bg-primary/20 hover:bg-primary/30 rounded-xl disabled:opacity-50 transition-colors">
-                                <Send className="w-4 h-4" />
-                              </button>
-                            </div>
+                        <div className="flex gap-2 mt-2">
+                          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold shrink-0">
+                            {effectiveName ? effectiveName.substring(0, 1).toUpperCase() : '?'}
                           </div>
-                        )}
+                          <div className="flex-1 flex gap-2">
+                            <input
+                              value={commentInputs[poll.id] || ''}
+                              onChange={e => setCommentInputs(p => ({ ...p, [poll.id]: e.target.value }))}
+                              onKeyDown={e => e.key === 'Enter' && handleComment(poll.id)}
+                              onFocus={() => !effectiveName && requireName(() => {})}
+                              placeholder={effectiveName ? "Tulis komentar..." : "Klik untuk komentar sebagai tamu..."}
+                              className="flex-1 !py-2 !px-3"
+                            />
+                            <button
+                              onClick={() => handleComment(poll.id)}
+                              disabled={!commentInputs[poll.id]?.trim() || submittingComment === poll.id}
+                              className="p-2 bg-primary/20 hover:bg-primary/30 rounded-xl disabled:opacity-50 transition-colors shrink-0">
+                              <Send className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   )}

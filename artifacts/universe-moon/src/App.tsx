@@ -30,6 +30,7 @@ import DraculaGame from "@/pages/DraculaGame";
 import About from "@/pages/About";
 import Voting from "@/pages/Voting";
 import Drakor from "@/pages/Drakor";
+import Admin from "@/pages/Admin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -111,6 +112,9 @@ function Router() {
       </Route>
       <Route path="/about">
         <Layout><About /></Layout>
+      </Route>
+      <Route path="/admin">
+        <Layout><Admin /></Layout>
       </Route>
 
       <Route component={NotFound} />

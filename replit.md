@@ -47,7 +47,8 @@ artifacts-monorepo/
 ### Auth
 - Token: `ADMIN UM SECRET` → admin role
 - Token: `MEMBER UM 2026` → member role
-- Guest mode (read-only)
+- Guest mode: can send NGL, vote (with guest name), comment on polls, react
+- **Auto-member**: registering an account auto-creates a member profile in `membersTable`
 - Auth stored in Zustand (useAuthStore)
 
 ### Pages & Routes
@@ -74,6 +75,7 @@ artifacts-monorepo/
 | `/voting` | Voting | Community polls with options + comments |
 | `/drakor` | Drakor | K-drama favorites per member |
 | `/about` | About | About page |
+| `/admin` | Admin | Admin-only panel: member CRUD, kick, restore ex-members |
 
 ### API Routes (all prefixed `/api`)
 - `/auth` — login, logout, me

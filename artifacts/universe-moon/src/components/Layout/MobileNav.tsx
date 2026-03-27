@@ -3,6 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuthStore } from '@/hooks/use-auth';
 
 const MAIN_LINKS = [
   { label: 'Home', href: '/' },
@@ -15,6 +16,7 @@ const MAIN_LINKS = [
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
+  const { user } = useAuthStore();
 
   return (
     <div className="md:hidden">
@@ -65,6 +67,11 @@ export function MobileNav() {
                 <Link href="/leaderboard" onClick={() => setIsOpen(false)} className="glass-hover p-4 rounded-xl text-center">Leaderboard</Link>
                 <Link href="/voting" onClick={() => setIsOpen(false)} className="glass-hover p-4 rounded-xl text-center">Voting</Link>
                 <Link href="/drakor" onClick={() => setIsOpen(false)} className="glass-hover p-4 rounded-xl text-center">Drakor</Link>
+                {user?.role === 'admin' && (
+                  <Link href="/admin" onClick={() => setIsOpen(false)} className="glass-hover p-4 rounded-xl text-center col-span-2 border border-purple-500/30 text-purple-300">
+                    🛡️ Panel Admin
+                  </Link>
+                )}
               </div>
             </motion.div>
           </>

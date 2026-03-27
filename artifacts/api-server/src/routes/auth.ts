@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { usersTable, sessionsTable } from "@workspace/db";
+import { usersTable, sessionsTable, membersTable } from "@workspace/db";
 import { eq, and, gt } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -62,6 +62,20 @@ router.post("/register", async (req, res) => {
     xp: 0,
     level: 1,
   }).returning();
+
+  // Auto-create member profile
+  const existingMember = await db.select().from(membersTable).where(eq(membersTable.name, username.toLowerCase()));
+  if (existingMember.length === 0) {
+    const memberRole = role === 'admin' ? 'Admin' : 'Member';
+    await db.insert(membersTable).values({
+      name: username.toLowerCase(),
+      nickname: username.toLowerCase(),
+      role: memberRole,
+      isActive: true,
+      joinDate: new Date().toISOString().split('T')[0],
+      avatarUrl: avatarUrl || null,
+    });
+  }
 
   return res.json({ success: true, message: "Registrasi berhasil! Silakan login." });
 });

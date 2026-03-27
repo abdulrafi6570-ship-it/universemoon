@@ -4,7 +4,7 @@ import { useAuthStore } from '@/hooks/use-auth';
 import {
   Home, Users, UserMinus, Image as ImageIcon, BookOpen, Link as LinkIcon,
   MessageCircle, Ghost, Music, Key, UsersRound, Video, Gamepad2, Trophy,
-  Info, LogOut, CheckSquare, Tv
+  Info, LogOut, CheckSquare, Tv, ShieldCheck
 } from 'lucide-react';
 import { useLogout } from '@workspace/api-client-react';
 
@@ -105,9 +105,23 @@ export function Sidebar() {
         })}
       </nav>
 
+      {user?.role === 'admin' && (
+        <Link
+          href="/admin"
+          className={cn(
+            "mt-2 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all",
+            location === '/admin'
+              ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+              : "text-purple-400 hover:bg-purple-500/10 border border-transparent"
+          )}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span>Panel Admin</span>
+        </Link>
+      )}
       <button 
         onClick={handleLogout}
-        className="mt-8 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-colors"
+        className="mt-2 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-colors"
       >
         <LogOut className="w-4 h-4" />
         <span>Logout</span>
