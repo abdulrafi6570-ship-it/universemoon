@@ -11,7 +11,7 @@ import Home from "@/pages/Home";
 import Members from "@/pages/Members";
 import Gallery from "@/pages/Gallery";
 import Chat from "@/pages/Chat";
-import Ngl from "@/pages/Ngl";
+import Ngl from "@/pages/NGL";
 import Leaderboard from "@/pages/Leaderboard";
 import NotFound from "@/pages/not-found";
 

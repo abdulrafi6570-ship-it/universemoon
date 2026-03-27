@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import {
   photosTable, memoriesTable, linksTable, musicTable, secretsTable, opMemTable, mepTable
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -12,17 +12,20 @@ router.get("/photos", async (req, res) => {
   const category = req.query.category as string;
   let photos;
   if (category && category !== "all") {
-    photos = await db.select().from(photosTable).where(eq(photosTable.category, category)).orderBy(photosTable.createdAt);
+    photos = await db.select().from(photosTable).where(eq(photosTable.category, category)).orderBy(desc(photosTable.createdAt));
   } else {
-    photos = await db.select().from(photosTable).orderBy(photosTable.createdAt);
+    photos = await db.select().from(photosTable).orderBy(desc(photosTable.createdAt));
   }
   return res.json(photos);
 });
 
 router.post("/photos", async (req, res) => {
-  const { url, caption, uploadedBy, category } = req.body;
-  if (!url) return res.status(400).json({ error: "URL required" });
-  const [photo] = await db.insert(photosTable).values({ url, caption, uploadedBy, category: category || "random" }).returning();
+  const { url, fileUrl, caption, uploadedBy, category } = req.body;
+  if (!url && !fileUrl) return res.status(400).json({ error: "URL or fileUrl required" });
+  const [photo] = await db.insert(photosTable).values({
+    url: url || null, fileUrl: fileUrl || null,
+    caption, uploadedBy, category: category || "random"
+  }).returning();
   return res.json(photo);
 });
 
@@ -33,7 +36,7 @@ router.delete("/photos/:id", async (req, res) => {
 
 // MEMORIES
 router.get("/memories", async (req, res) => {
-  const memories = await db.select().from(memoriesTable).orderBy(memoriesTable.createdAt);
+  const memories = await db.select().from(memoriesTable).orderBy(memoriesTable.date);
   return res.json(memories);
 });
 
@@ -74,9 +77,9 @@ router.get("/music", async (req, res) => {
 });
 
 router.post("/music", async (req, res) => {
-  const { title, artist, url, addedBy } = req.body;
+  const { title, artist, url, fileUrl, addedBy } = req.body;
   if (!title || !artist) return res.status(400).json({ error: "Title and artist required" });
-  const [track] = await db.insert(musicTable).values({ title, artist, url, addedBy }).returning();
+  const [track] = await db.insert(musicTable).values({ title, artist, url: url || null, fileUrl: fileUrl || null, addedBy }).returning();
   return res.json(track);
 });
 
@@ -113,43 +116,95 @@ router.delete("/secrets/:id", async (req, res) => {
 
 // OPMEM
 router.get("/opmem", async (req, res) => {
-  const [opmem] = await db.select().from(opMemTable).orderBy(opMemTable.createdAt).limit(1);
+  const all = await db.select().from(opMemTable).orderBy(desc(opMemTable.createdAt));
+  return res.json(all);
+});
+
+router.get("/opmem/active", async (req, res) => {
+  const [opmem] = await db.select().from(opMemTable).where(eq(opMemTable.isOpen, true)).orderBy(desc(opMemTable.createdAt)).limit(1);
   return res.json(opmem || null);
 });
 
 router.post("/opmem", async (req, res) => {
-  const { title, description, openDate, closeDate, isOpen } = req.body;
+  const { title, description, openDate, closeDate, isOpen, requirements } = req.body;
   if (!title) return res.status(400).json({ error: "Title required" });
-  const existing = await db.select().from(opMemTable);
-  if (existing.length > 0) {
-    const [updated] = await db.update(opMemTable).set({ title, description, openDate, closeDate, isOpen }).where(eq(opMemTable.id, existing[0].id)).returning();
-    return res.json(updated);
-  }
-  const [opmem] = await db.insert(opMemTable).values({ title, description, openDate, closeDate, isOpen: isOpen ?? true, acceptedMembers: [] }).returning();
+  const [opmem] = await db.insert(opMemTable).values({
+    title, description, openDate, closeDate,
+    isOpen: isOpen ?? true, acceptedMembers: [], requirements,
+  }).returning();
   return res.json(opmem);
 });
 
-router.post("/opmem/accepted", async (req, res) => {
-  const { name, opMemId } = req.body;
-  const [opmem] = await db.select().from(opMemTable).where(eq(opMemTable.id, opMemId));
+router.put("/opmem/:id", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { title, description, openDate, closeDate, isOpen, requirements, acceptedMembers } = req.body;
+  const [updated] = await db.update(opMemTable).set({
+    title, description, openDate, closeDate, isOpen, requirements,
+    ...(acceptedMembers !== undefined ? { acceptedMembers } : {}),
+  }).where(eq(opMemTable.id, id)).returning();
+  return res.json(updated);
+});
+
+router.post("/opmem/:id/accepted", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { name, tiktokUsername, tiktokPhotoUrl } = req.body;
+  const [opmem] = await db.select().from(opMemTable).where(eq(opMemTable.id, id));
   if (!opmem) return res.status(404).json({ error: "OpMem not found" });
-  const accepted = (opmem.acceptedMembers as string[]) || [];
-  accepted.push(name);
-  await db.update(opMemTable).set({ acceptedMembers: accepted }).where(eq(opMemTable.id, opMemId));
+  const accepted = (opmem.acceptedMembers as any[]) || [];
+  accepted.push({ name, tiktokUsername: tiktokUsername || null, tiktokPhotoUrl: tiktokPhotoUrl || null, addedAt: new Date().toISOString() });
+  const [updated] = await db.update(opMemTable).set({ acceptedMembers: accepted }).where(eq(opMemTable.id, id)).returning();
+  return res.json(updated);
+});
+
+router.delete("/opmem/:id/accepted/:idx", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const idx = parseInt(req.params.idx);
+  const [opmem] = await db.select().from(opMemTable).where(eq(opMemTable.id, id));
+  if (!opmem) return res.status(404).json({ error: "Not found" });
+  const accepted = (opmem.acceptedMembers as any[]) || [];
+  accepted.splice(idx, 1);
+  await db.update(opMemTable).set({ acceptedMembers: accepted }).where(eq(opMemTable.id, id));
+  return res.json({ success: true });
+});
+
+router.delete("/opmem/:id", async (req, res) => {
+  await db.delete(opMemTable).where(eq(opMemTable.id, parseInt(req.params.id)));
   return res.json({ success: true });
 });
 
 // MEP
 router.get("/mep", async (req, res) => {
-  const meps = await db.select().from(mepTable).orderBy(mepTable.createdAt);
+  const meps = await db.select().from(mepTable).orderBy(desc(mepTable.createdAt));
   return res.json(meps);
 });
 
 router.post("/mep", async (req, res) => {
-  const { title, description, videoUrl, participants, createdBy } = req.body;
-  if (!title || !videoUrl) return res.status(400).json({ error: "Title and videoUrl required" });
-  const [mep] = await db.insert(mepTable).values({ title, description, videoUrl, participants: participants || [], createdBy }).returning();
+  const { title, description, videoUrl, fileUrl, participants, createdBy } = req.body;
+  if (!title) return res.status(400).json({ error: "Title required" });
+  const [mep] = await db.insert(mepTable).values({
+    title, description,
+    videoUrl: videoUrl || null, fileUrl: fileUrl || null,
+    participants: participants || [], createdBy,
+  }).returning();
   return res.json(mep);
+});
+
+router.put("/mep/:id", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { title, description, videoUrl, fileUrl, participants } = req.body;
+  const [updated] = await db.update(mepTable).set({ title, description, videoUrl, fileUrl, participants }).where(eq(mepTable.id, id)).returning();
+  return res.json(updated);
+});
+
+router.post("/mep/:id/participant", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { name, photoUrl } = req.body;
+  const [mep] = await db.select().from(mepTable).where(eq(mepTable.id, id));
+  if (!mep) return res.status(404).json({ error: "Not found" });
+  const participants = (mep.participants as any[]) || [];
+  participants.push({ name, photoUrl: photoUrl || null });
+  const [updated] = await db.update(mepTable).set({ participants }).where(eq(mepTable.id, id)).returning();
+  return res.json(updated);
 });
 
 router.delete("/mep/:id", async (req, res) => {

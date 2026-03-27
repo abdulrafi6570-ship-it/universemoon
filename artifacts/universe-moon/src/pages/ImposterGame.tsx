@@ -1,248 +1,387 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Users, AlertTriangle, ShieldAlert, ChevronRight, RotateCcw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/hooks/use-auth';
+import { motion } from 'framer-motion';
+import { Users, Copy, Check, Crown, Eye, EyeOff, ChevronRight, Vote, Trophy, RotateCcw, Home } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { useSound } from '@/hooks/use-sound';
+
+const API = (p: string) => `/api/games${p}`;
+
+interface Player { username: string; isImposter: boolean; word: string; role: string; eliminated: boolean; votes: number; hasGivenClue: boolean; }
+interface Clue { username: string; clue: string; round: number; }
+interface RoomData {
+  id: number; code: string; gameType: string; hostUsername: string; status: string;
+  phase: string; round: number; clueOrder: string[]; currentClueIdx: number;
+  clues: Clue[]; votes: any[]; winner: string | null; players: Player[];
+  settings: { mainWord?: string; imposterWord?: string; categoryName?: string };
+}
 
 export default function ImposterGame() {
   const { user } = useAuthStore();
+  const { toast } = useToast();
   const { playSfx } = useSound();
-  
-  const [phase, setPhase] = useState<'setup' | 'discussion' | 'voting' | 'elimination' | 'end'>('setup');
-  const [players, setPlayers] = useState<string[]>(['']);
-  const [gameState, setGameState] = useState<any>(null);
-  const [myRole, setMyRole] = useState<string | null>(null);
-  const [myName, setMyName] = useState(user?.username || '');
-  const [timer, setTimer] = useState(0);
 
-  // Setup functions
-  const addPlayerInput = () => { if (players.length < 10) setPlayers([...players, '']); };
-  const updatePlayer = (i: number, val: string) => {
-    const newP = [...players];
-    newP[i] = val;
-    setPlayers(newP);
-  };
-  
-  const startGame = () => {
-    const validPlayers = players.filter(p => p.trim());
-    if (validPlayers.length < 3) return alert('Min 3 players');
-    
-    // Simple client side logic for now to ensure it works without API
-    const roles = ['imposter'];
-    while(roles.length < validPlayers.length) roles.push('crewmate');
-    // Shuffle
-    roles.sort(() => Math.random() - 0.5);
-    
-    const initialPlayers = validPlayers.map((name, i) => ({
-      name,
-      role: roles[i],
-      isAlive: true,
-      votes: 0
-    }));
+  const [screen, setScreen] = useState<'home'|'join'|'room'>('home');
+  const [joinCode, setJoinCode] = useState('');
+  const [roomCode, setRoomCode] = useState('');
+  const [room, setRoom] = useState<RoomData | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [myRole, setMyRole] = useState<Player | null>(null);
+  const [showRole, setShowRole] = useState(false);
+  const [clueInput, setClueInput] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [showLB, setShowLB] = useState(false);
 
-    setGameState({
-      players: initialPlayers,
-      imposterCount: 1
-    });
-    setPhase('discussion');
-    setTimer(120); // 2 mins
-    playSfx('notification');
-  };
+  const username = user?.username || '';
+
+  const fetchRoom = useCallback(async (code: string) => {
+    try {
+      const res = await fetch(API(`/room/${code}`));
+      if (res.ok) {
+        const data: RoomData = await res.json();
+        setRoom(data);
+        const me = data.players.find(p => p.username === username);
+        if (me && data.phase !== 'lobby') setMyRole(me);
+      }
+    } catch {}
+  }, [username]);
 
   useEffect(() => {
-    if (timer > 0 && (phase === 'discussion' || phase === 'voting')) {
-      const id = setTimeout(() => setTimer(timer - 1), 1000);
-      return () => clearTimeout(id);
-    } else if (timer === 0 && phase === 'discussion') {
-      setPhase('voting');
-      setTimer(60);
-    }
-  }, [timer, phase]);
+    fetch(API('/categories')).then(r => r.json()).then(setCategories).catch(() => {});
+    fetch(API('/leaderboard/imposter')).then(r => r.json()).then(setLeaderboard).catch(() => {});
+  }, []);
 
-  const checkMyRole = () => {
-    if(!gameState) return;
-    const me = gameState.players.find((p: any) => p.name.toLowerCase() === myName.toLowerCase());
-    if (me) setMyRole(me.role);
-    else alert('Nama tidak ada di game');
-  };
+  useEffect(() => {
+    if (!roomCode) return;
+    const id = setInterval(() => fetchRoom(roomCode), 2500);
+    return () => clearInterval(id);
+  }, [roomCode, fetchRoom]);
 
-  const castVote = (targetName: string) => {
-    if (!gameState) return;
-    const newPlayers = gameState.players.map((p: any) => 
-      p.name === targetName ? { ...p, votes: p.votes + 1 } : p
-    );
-    setGameState({ ...gameState, players: newPlayers });
-    playSfx('click');
-  };
-
-  const endVoting = () => {
-    if (!gameState) return;
-    let maxVotes = -1;
-    let eliminated = null;
-    
-    gameState.players.forEach((p: any) => {
-      if (p.votes > maxVotes) { maxVotes = p.votes; eliminated = p; }
-      else if (p.votes === maxVotes) { eliminated = null; } // Tie
+  const createRoom = async () => {
+    if (!username) return toast({ title: 'Login dulu ya!', variant: 'destructive' });
+    const res = await fetch(API('/room/create'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameType: 'imposter', hostUsername: username }),
     });
-
-    if (eliminated && maxVotes > 0) {
-      const newPlayers = gameState.players.map((p: any) => 
-        p.name === eliminated.name ? { ...p, isAlive: false } : p
-      );
-      setGameState({ ...gameState, players: newPlayers, lastEliminated: eliminated.name });
-    } else {
-      setGameState({ ...gameState, lastEliminated: null }); // Skip
-    }
-    
-    setPhase('elimination');
-  };
-
-  const nextRound = () => {
-    // Check win condition
-    const aliveImposters = gameState.players.filter((p: any) => p.role === 'imposter' && p.isAlive).length;
-    const aliveCrew = gameState.players.filter((p: any) => p.role === 'crewmate' && p.isAlive).length;
-    
-    if (aliveImposters === 0) {
-      setGameState({ ...gameState, winner: 'Crewmates' });
-      setPhase('end');
-      playSfx('notification');
-    } else if (aliveImposters >= aliveCrew) {
-      setGameState({ ...gameState, winner: 'Imposter' });
-      setPhase('end');
-      playSfx('error');
-    } else {
-      // Reset votes
-      const newPlayers = gameState.players.map((p: any) => ({ ...p, votes: 0 }));
-      setGameState({ ...gameState, players: newPlayers });
-      setPhase('discussion');
-      setTimer(120);
+    if (res.ok) {
+      const data = await res.json();
+      setRoomCode(data.code); setRoom(data); setScreen('room'); playSfx('notification');
     }
   };
 
-  if (phase === 'setup') {
-    return (
-      <div className="max-w-xl mx-auto glass p-8 rounded-3xl mt-8">
-        <div className="text-center mb-8">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold font-serif mb-2">Who is Imposter</h1>
-          <p className="text-muted-foreground text-sm">Masukkan nama pemain (min 3, max 10)</p>
+  const joinRoom = async () => {
+    if (!username || !joinCode.trim()) return;
+    const res = await fetch(API('/room/join'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: joinCode.toUpperCase().trim(), username }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setRoomCode(data.code); setRoom(data); setScreen('room');
+    } else toast({ title: 'Kode tidak valid!', variant: 'destructive' });
+  };
+
+  const startGame = async (categoryKey: string) => {
+    const res = await fetch(API(`/room/${roomCode}/start`), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, categoryKey }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setRoom(data);
+      const me = data.players.find((p: Player) => p.username === username);
+      if (me) { setMyRole(me); setShowRole(true); playSfx('notification'); }
+    }
+  };
+
+  const submitClue = async () => {
+    if (!clueInput.trim()) return;
+    const res = await fetch(API(`/room/${roomCode}/clue`), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, clue: clueInput.trim() }),
+    });
+    if (res.ok) { setClueInput(''); setRoom(await res.json()); playSfx('message'); }
+    else toast({ title: 'Bukan giliranmu!', variant: 'destructive' });
+  };
+
+  const submitVote = async (target: string) => {
+    if (!room || room.votes.find((v: any) => v.from === username)) return toast({ title: 'Sudah vote!', variant: 'destructive' });
+    const res = await fetch(API(`/room/${roomCode}/vote`), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, targetUsername: target }),
+    });
+    if (res.ok) { setRoom(await res.json()); playSfx('click'); }
+  };
+
+  const resetRoom = async () => {
+    await fetch(API(`/room/${roomCode}/reset`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
+    setMyRole(null); setShowRole(false); fetchRoom(roomCode);
+  };
+
+  const isHost = room?.hostUsername === username;
+  const currentCluer = room?.clueOrder?.[room.currentClueIdx ?? 0];
+  const iMyTurn = currentCluer === username;
+  const myClueGiven = room?.clues?.find(c => c.username === username && c.round === room?.round);
+  const myVote = room?.votes?.find((v: any) => v.from === username);
+  const alivePlayers = room?.players?.filter(p => !p.eliminated) || [];
+
+  if (screen === 'home') return (
+    <div className="space-y-5 animate-in fade-in max-w-2xl mx-auto">
+      <div className="glass rounded-3xl p-8 text-center">
+        <div className="text-7xl mb-4">🎭</div>
+        <h1 className="font-serif text-3xl font-bold mb-2 text-glow">Game Imposter</h1>
+        <p className="text-muted-foreground text-sm mb-8 max-w-xs mx-auto">Temukan Imposter melalui clue dan diskusi seru!</p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button onClick={createRoom} className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold hover:opacity-90 transition-opacity">
+            <Crown className="w-5 h-5" /> Buat Room
+          </button>
+          <button onClick={() => setScreen('join')} className="flex items-center justify-center gap-2 px-6 py-3 glass border border-white/20 rounded-xl font-semibold hover:bg-white/10 transition-colors">
+            <Users className="w-5 h-5" /> Join Room
+          </button>
         </div>
-        
-        <div className="space-y-3 mb-6">
-          {players.map((p, i) => (
-            <input 
-              key={i} 
-              value={p} 
-              onChange={e => updatePlayer(i, e.target.value)}
-              placeholder={`Player ${i+1}`}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-red-500"
-            />
-          ))}
-          {players.length < 10 && (
-            <button onClick={addPlayerInput} className="w-full py-3 border border-dashed border-white/20 rounded-xl text-sm text-muted-foreground hover:bg-white/5 transition-colors">
-              + Tambah Player
-            </button>
-          )}
-        </div>
-        <button onClick={startGame} className="w-full bg-red-600 text-white font-bold rounded-xl py-4 hover:bg-red-700 transition-colors shadow-[0_0_20px_rgba(220,38,38,0.4)]">
-          Mulai Game
+        <button onClick={() => setShowLB(!showLB)} className="mt-5 text-sm text-muted-foreground hover:text-white flex items-center gap-2 mx-auto">
+          <Trophy className="w-4 h-4 text-yellow-400" /> Leaderboard
         </button>
       </div>
-    );
-  }
+      {showLB && (
+        <div className="glass rounded-2xl p-5">
+          <h3 className="font-bold mb-4 flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-400" /> Top Pemain</h3>
+          {leaderboard.length === 0 ? <p className="text-muted-foreground text-sm text-center">Belum ada data</p> : (
+            <div className="space-y-2">{leaderboard.slice(0,10).map((r: any, i: number) => (
+              <div key={r.id} className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground w-6">{i+1}.</span>
+                <span className="flex-1">{r.username}</span>
+                <span className="text-green-400 mr-2">{r.wins}W</span>
+                <span className="text-red-400 mr-2">{r.losses}L</span>
+                <span className="text-muted-foreground text-xs">{r.gamesPlayed}g</span>
+              </div>
+            ))}</div>
+          )}
+        </div>
+      )}
+      <div className="glass rounded-2xl p-5 space-y-2">
+        <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-3">📖 Cara Main</h3>
+        {['Host buat room, share kode ke teman','Semua join, host pilih kategori','Setiap pemain dapat kata rahasia (Imposter dapat kata berbeda!)','Berikan clue secara bergiliran 2 putaran','Vote siapa Imposternya','Tebak benar = Warga menang, tebak salah = Imposter menang!'].map((s, i) => (
+          <div key={i} className="flex gap-2 text-sm text-muted-foreground"><span className="text-primary font-bold shrink-0">{i+1}.</span> {s}</div>
+        ))}
+      </div>
+    </div>
+  );
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-6 mt-4">
-      <div className="glass p-6 rounded-3xl flex justify-between items-center bg-black/50 border-white/5">
-        <div className="flex items-center gap-4">
-          <div className="bg-red-500/20 p-3 rounded-xl border border-red-500/30">
-            <ShieldAlert className="w-6 h-6 text-red-400" />
+  if (screen === 'join') return (
+    <div className="max-w-sm mx-auto animate-in fade-in">
+      <div className="glass rounded-3xl p-8 space-y-5">
+        <h2 className="font-serif text-2xl font-bold text-center">Join Room</h2>
+        <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="KODE"
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-center text-3xl tracking-[0.5em] font-mono focus:outline-none focus:border-primary uppercase"
+          maxLength={4} onKeyDown={e => e.key === 'Enter' && joinRoom()} />
+        <button onClick={joinRoom} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold">Masuk</button>
+        <button onClick={() => setScreen('home')} className="w-full text-muted-foreground text-sm">← Kembali</button>
+      </div>
+    </div>
+  );
+
+  if (!room) return <div className="text-center py-20 text-muted-foreground animate-pulse">Memuat room...</div>;
+
+  if (room.phase === 'lobby') return (
+    <div className="max-w-lg mx-auto animate-in fade-in space-y-4">
+      <div className="glass rounded-3xl p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-xl font-bold">Room Lobby 🎭</h2>
+          <button onClick={() => { setScreen('home'); setRoomCode(''); setRoom(null); }} className="text-muted-foreground hover:text-white"><Home className="w-5 h-5" /></button>
+        </div>
+        <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-4">
+          <div><p className="text-xs text-muted-foreground mb-1">Kode Room</p>
+            <span className="font-mono text-4xl font-black tracking-[0.3em] text-primary">{room.code}</span></div>
+          <button onClick={() => { navigator.clipboard.writeText(room.code); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="ml-auto p-3 glass rounded-xl">
+            {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+          </button>
+        </div>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pemain</span>
+            <span className="text-xs text-muted-foreground">{room.players.length}/15</span>
           </div>
-          <div>
-            <h2 className="text-xl font-bold uppercase tracking-widest">{phase} PHASE</h2>
-            {phase !== 'end' && (
-              <p className="text-sm font-mono text-muted-foreground">Timer: {Math.floor(timer/60)}:{(timer%60).toString().padStart(2,'0')}</p>
-            )}
+          <div className="grid grid-cols-2 gap-2">
+            {room.players.map(p => (
+              <div key={p.username} className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-xl text-sm">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center text-xs font-bold">{p.username.substring(0,2).toUpperCase()}</div>
+                <span className="truncate">{p.username}</span>
+                {p.username === room.hostUsername && <Crown className="w-3 h-3 text-yellow-400 ml-auto shrink-0" />}
+              </div>
+            ))}
           </div>
         </div>
-        
-        {phase === 'discussion' && (
-          <button onClick={() => {setPhase('voting'); setTimer(60);}} className="bg-white/10 px-4 py-2 rounded-lg text-sm hover:bg-white/20">Skip to Voting</button>
-        )}
-        {phase === 'voting' && (
-          <button onClick={endVoting} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-[0_0_15px_rgba(220,38,38,0.4)]">End Vote</button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 glass p-6 rounded-3xl">
-          {phase === 'end' ? (
-            <div className="text-center py-20">
-              <h1 className={`text-6xl font-bold mb-4 uppercase ${gameState.winner === 'Imposter' ? 'text-red-500' : 'text-blue-400'}`}>
-                {gameState.winner} WIN!
-              </h1>
-              <p className="text-muted-foreground mb-8">Game Over.</p>
-              <button onClick={() => setPhase('setup')} className="bg-white text-black px-8 py-3 rounded-full font-bold flex items-center gap-2 mx-auto">
-                <RotateCcw className="w-4 h-4"/> Main Lagi
-              </button>
+        {isHost && room.players.length >= 3 ? (
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Pilih Kategori</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+              {categories.map((cat: any) => (
+                <button key={cat.key} onClick={() => startGame(cat.key)} className="p-3 glass rounded-xl text-left hover:border-primary/50 border border-white/10 transition-all group">
+                  <div className="text-2xl mb-1">{cat.emoji}</div>
+                  <div className="text-xs font-semibold group-hover:text-primary transition-colors">{cat.name}</div>
+                </button>
+              ))}
             </div>
-          ) : phase === 'elimination' ? (
-            <div className="text-center py-20 animate-in zoom-in duration-500">
-              {gameState.lastEliminated ? (
-                <>
-                  <div className="text-2xl mb-2">{gameState.lastEliminated}</div>
-                  <div className="text-4xl font-bold text-red-500">Ejected.</div>
-                  <p className="text-muted-foreground mt-4 text-sm">
-                    {gameState.players.find((p:any)=>p.name===gameState.lastEliminated)?.role === 'imposter' ? 'They were an Imposter.' : 'They were not an Imposter.'}
-                  </p>
-                </>
-              ) : (
-                <div className="text-4xl font-bold text-gray-400">No one was ejected (Tie/Skip).</div>
-              )}
-              <button onClick={nextRound} className="mt-8 bg-white/10 px-6 py-3 rounded-full hover:bg-white/20">Lanjut Round</button>
+          </div>
+        ) : isHost ? <p className="text-center text-sm text-muted-foreground">Butuh minimal 3 pemain</p>
+        : <p className="text-center text-sm text-muted-foreground animate-pulse flex items-center justify-center gap-2"><span className="w-2 h-2 rounded-full bg-primary animate-ping inline-block" /> Menunggu host memulai...</p>}
+      </div>
+    </div>
+  );
+
+  if (showRole && myRole) return (
+    <div className="max-w-sm mx-auto animate-in fade-in">
+      <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass rounded-3xl p-8 text-center space-y-6">
+        <div className="text-7xl">{myRole.isImposter ? '🎭' : '🎪'}</div>
+        <div>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Role kamu</p>
+          <h2 className="font-serif text-3xl font-bold mb-3">{myRole.role}</h2>
+          {myRole.isImposter ? (
+            <div className="bg-red-900/30 border border-red-500/30 rounded-2xl p-4">
+              <p className="text-red-300 font-bold text-lg">⚠️ Kamu IMPOSTER!</p>
+              <p className="text-red-400/80 text-sm mt-1">Katamu: "{myRole.word}"</p>
+              <p className="text-muted-foreground text-xs mt-2">Katamu berbeda dari warga. Jangan ketahuan!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {gameState?.players.map((p: any, i: number) => (
-                <div key={i} className={`p-4 rounded-2xl border ${p.isAlive ? 'bg-white/5 border-white/10' : 'bg-red-500/10 border-red-500/20 opacity-50'} relative`}>
-                  <div className="flex justify-between items-center">
-                    <span className={`font-bold ${!p.isAlive && 'line-through text-red-400'}`}>{p.name}</span>
-                    {phase === 'voting' && p.isAlive && (
-                      <button onClick={() => castVote(p.name)} className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded hover:bg-red-500 hover:text-white">Vote</button>
-                    )}
-                  </div>
-                  {phase === 'voting' && p.votes > 0 && (
-                    <div className="mt-2 text-xs font-mono text-red-400 bg-red-500/10 inline-block px-2 rounded">
-                      Votes: {p.votes}
-                    </div>
-                  )}
-                  {!p.isAlive && (
-                    <div className="text-[10px] mt-2 uppercase tracking-widest text-red-400">Role: {p.role}</div>
-                  )}
+            <div className="bg-indigo-900/30 border border-indigo-500/30 rounded-2xl p-4">
+              <p className="text-indigo-300 font-bold mb-1">Katamu:</p>
+              <p className="text-3xl font-black tracking-wide">"{myRole.word}"</p>
+              <p className="text-muted-foreground text-xs mt-2">Berikan clue tanpa menyebut kata ini langsung!</p>
+            </div>
+          )}
+          {room.settings?.categoryName && <p className="text-xs text-muted-foreground mt-3">Kategori: {room.settings.categoryName}</p>}
+        </div>
+        <button onClick={() => setShowRole(false)} className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold flex items-center justify-center gap-2">
+          Siap! <ChevronRight className="w-5 h-5" />
+        </button>
+      </motion.div>
+    </div>
+  );
+
+  return (
+    <div className="max-w-2xl mx-auto animate-in fade-in space-y-4">
+      <div className="glass rounded-2xl p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="font-mono font-bold text-primary text-lg">{room.code}</span>
+          <span className="text-muted-foreground text-xs">Ronde {room.round}</span>
+          {room.settings?.categoryName && <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full">{room.settings.categoryName}</span>}
+        </div>
+        <div className={`px-3 py-1 rounded-full text-xs font-bold border ${room.phase.includes('clue') ? 'bg-blue-900/40 text-blue-300 border-blue-500/30' : room.phase === 'voting' ? 'bg-red-900/40 text-red-300 border-red-500/30' : 'bg-green-900/40 text-green-300 border-green-500/30'}`}>
+          {room.phase === 'clue_round_1' ? '📢 Ronde 1' : room.phase === 'clue_round_2' ? '📢 Ronde 2' : room.phase === 'voting' ? '🗳️ Voting' : '🏆 Selesai'}
+        </div>
+      </div>
+
+      {myRole && (
+        <div className="glass rounded-2xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${myRole.isImposter ? 'bg-red-500/20' : 'bg-indigo-500/20'}`}>{myRole.isImposter ? '🎭' : '🎪'}</div>
+            <div><p className="text-xs text-muted-foreground">Role</p><p className="font-semibold text-sm">{myRole.role}</p></div>
+          </div>
+          {!myRole.isImposter && (
+            <div className="flex items-center gap-2">
+              {showRole && <span className="font-mono bg-white/10 px-3 py-1 rounded-lg text-sm">{myRole.word}</span>}
+              <button onClick={() => setShowRole(!showRole)} className="p-2 rounded-xl hover:bg-white/10">{showRole ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+            </div>
+          )}
+          {myRole.isImposter && <span className="text-xs text-red-400 bg-red-900/20 px-3 py-1.5 rounded-xl">IMPOSTER</span>}
+        </div>
+      )}
+
+      <div className="glass rounded-2xl p-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Pemain</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {room.players.map(p => (
+            <div key={p.username} className={`p-3 rounded-xl border text-sm ${p.eliminated ? 'opacity-40 border-red-500/20' : p.username === currentCluer && room.phase.includes('clue') ? 'border-blue-500/60 bg-blue-900/20 animate-pulse' : 'border-white/10 bg-white/5'}`}>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center text-[10px] font-bold">{p.username.substring(0,2).toUpperCase()}</div>
+                <span className="truncate font-medium text-xs">{p.username}</span>
+              </div>
+              {p.hasGivenClue && !p.eliminated && room.phase.includes('clue') && <div className="text-[9px] text-green-400 mt-1">✓ Clue diberikan</div>}
+              {p.eliminated && <div className="text-[9px] text-red-400 mt-1">{p.isImposter ? '🎭 Imposter!' : '❌ Out'}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {(room.phase === 'clue_round_1' || room.phase === 'clue_round_2') && (
+        <div className="glass rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">Giliran:</span>
+            <span className="text-primary font-bold">{currentCluer}</span>
+            {iMyTurn && !myClueGiven && <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full animate-pulse">Giliranmu!</span>}
+          </div>
+          {iMyTurn && !myClueGiven && (
+            <div className="flex gap-2">
+              <input value={clueInput} onChange={e => setClueInput(e.target.value)} placeholder="Ketik clue..."
+                onKeyDown={e => e.key === 'Enter' && submitClue()}
+                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+              <button onClick={submitClue} disabled={!clueInput.trim()} className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold text-sm disabled:opacity-50">Kirim</button>
+            </div>
+          )}
+          {iMyTurn && myClueGiven && <p className="text-sm text-green-400">✓ Clue kamu: "{myClueGiven.clue}"</p>}
+          {room.clues.length > 0 && (
+            <div className="border-t border-white/10 pt-4 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Clue masuk:</p>
+              {room.clues.map((c, i) => (
+                <div key={i} className="flex gap-2 text-sm p-2 rounded-xl bg-white/5">
+                  <span className="text-primary font-semibold">{c.username}:</span>
+                  <span>"{c.clue}"</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground">R{c.round}</span>
                 </div>
               ))}
             </div>
           )}
         </div>
+      )}
 
-        <div className="glass p-6 rounded-3xl h-fit border border-primary/20 bg-primary/5">
-          <h3 className="font-bold mb-4 flex items-center gap-2"><Users className="w-5 h-5"/> My Role</h3>
-          {!myRole ? (
-            <div className="space-y-3">
-              <input value={myName} onChange={e=>setMyName(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-center" placeholder="Nama Anda di game"/>
-              <button onClick={checkMyRole} className="w-full bg-primary text-white rounded-lg py-2 text-sm font-bold">Show Role</button>
+      {room.phase === 'voting' && (
+        <div className="glass rounded-2xl p-5 space-y-4">
+          <h3 className="font-bold flex items-center gap-2"><Vote className="w-4 h-4 text-red-400" /> Waktunya Vote!</h3>
+          <div className="bg-white/5 rounded-xl p-3 space-y-1 max-h-36 overflow-y-auto">
+            <p className="text-xs font-bold text-muted-foreground mb-2">Recap clue:</p>
+            {room.clues.map((c, i) => (
+              <div key={i} className="text-xs flex gap-2"><span className="text-primary font-semibold">{c.username}:</span><span>"{c.clue}"</span><span className="text-muted-foreground ml-auto">R{c.round}</span></div>
+            ))}
+          </div>
+          {myVote ? (
+            <div className="text-center py-3">
+              <p className="text-sm">Kamu vote: <span className="text-red-400 font-bold">{myVote.target}</span></p>
+              <p className="text-xs text-muted-foreground mt-1">{room.votes.length}/{alivePlayers.length} sudah vote</p>
             </div>
           ) : (
-            <div className="text-center py-4">
-              <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Anda adalah</div>
-              <div className={`text-3xl font-bold font-serif ${myRole === 'imposter' ? 'text-red-500' : 'text-blue-400'}`}>
-                {myRole.toUpperCase()}
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">Pilih siapa yang kamu curigai:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {alivePlayers.filter(p => p.username !== username).map(p => (
+                  <button key={p.username} onClick={() => submitVote(p.username)}
+                    className="flex items-center gap-2 p-3 bg-red-900/20 border border-red-500/20 hover:border-red-400/50 rounded-xl text-sm font-medium transition-all">
+                    <Vote className="w-4 h-4 text-red-400" /> {p.username}
+                  </button>
+                ))}
               </div>
-              <button onClick={()=>setMyRole(null)} className="text-xs text-muted-foreground underline mt-4">Sembunyikan</button>
             </div>
           )}
         </div>
-      </div>
+      )}
+
+      {room.phase === 'ended' && (
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass rounded-3xl p-8 text-center space-y-5">
+          <div className="text-7xl">{room.winner === 'villagers' ? '🎉' : '🎭'}</div>
+          <h2 className="font-serif text-3xl font-bold">{room.winner === 'villagers' ? 'Warga Menang! 🎉' : 'Imposter Menang! 🎭'}</h2>
+          <div className="bg-white/5 rounded-2xl p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Para Imposter:</p>
+            {room.players.filter(p => p.isImposter).map(p => (
+              <div key={p.username} className="flex items-center justify-between py-1">
+                <span className="text-red-400 font-semibold">{p.username}</span>
+                <span className="text-muted-foreground text-sm">"{p.word}"</span>
+              </div>
+            ))}
+          </div>
+          {isHost && <button onClick={resetRoom} className="flex items-center gap-2 mx-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold"><RotateCcw className="w-4 h-4" /> Main Lagi</button>}
+        </motion.div>
+      )}
     </div>
   );
 }

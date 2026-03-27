@@ -9,6 +9,7 @@ export const membersTable = pgTable("um_members", {
   role: text("role").default("Member"),
   bio: text("bio"),
   joinDate: text("join_date"),
+  specialty: text("specialty"),
   favoriteSong: text("favorite_song"),
   socialLinks: text("social_links"),
   avatarUrl: text("avatar_url"),

@@ -9,6 +9,8 @@ import gamesRouter from "./games";
 import leaderboardRouter from "./leaderboard";
 import socialRouter from "./social";
 import usersRouter from "./users";
+import uploadRouter from "./upload";
+import adminEventsRouter from "./admin-events";
 
 const router: IRouter = Router();
 
@@ -22,5 +24,7 @@ router.use("/games", gamesRouter);
 router.use("/leaderboard", leaderboardRouter);
 router.use(socialRouter);
 router.use("/users", usersRouter);
+router.use("/upload", uploadRouter);
+router.use("/events", adminEventsRouter);
 
 export default router;

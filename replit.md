@@ -2,7 +2,7 @@
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+pnpm workspace monorepo using TypeScript. Contains the **Universe Moon [Um]** full-stack web app — a WhatsApp group community platform.
 
 ## Stack
 
@@ -10,103 +10,130 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **API framework**: Express 5
+- **API framework**: Express 5 (port 8080)
+- **Frontend**: React + Vite + TailwindCSS + Framer Motion (port 26156)
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **File uploads**: Multer (stored in `/uploads`, served statically)
+- **Build**: esbuild (API), Vite (frontend)
 
 ## Structure
 
 ```text
 artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+├── artifacts/
+│   ├── api-server/           # Express API server (port 8080)
+│   └── universe-moon/        # React frontend (port 26156)
+│       └── src/
+│           ├── pages/        # All page components
+│           ├── components/   # Layout, Theme/DynamicSky, UI
+│           └── hooks/        # useAuthStore, use-toast
+├── lib/
+│   ├── api-spec/             # OpenAPI spec + Orval codegen
+│   ├── api-client-react/     # Generated React Query hooks
+│   ├── api-zod/              # Generated Zod schemas
+│   └── db/                   # Drizzle ORM schema + DB connection
+├── scripts/                  # Utility scripts
+└── pnpm-workspace.yaml
 ```
 
-## TypeScript & Composite Projects
+## Universe Moon — Feature Map
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+### Auth
+- Token: `ADMIN UM SECRET` → admin role
+- Token: `MEMBER UM 2026` → member role
+- Guest mode (read-only)
+- Auth stored in Zustand (useAuthStore)
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+### Pages & Routes
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | Home | Time-based greeting, stats, quick links, admin events |
+| `/members` | Members | Member list grouped by role, avatar upload, kick |
+| `/ex-members` | ExMembers | Kicked/inactive members |
+| `/gallery` | Gallery | Masonry photo gallery, file upload, lightbox |
+| `/chat` | Chat | WhatsApp-like bubbles, reactions, stickers, DMs, replies |
+| `/ngl` | NGL | Anonymous messages with reactions + comments |
+| `/memories` | Memories | Timeline of memories |
+| `/links` | Links | Saved links |
+| `/music` | Music | YouTube embed + audio file player |
+| `/vault` | Vault | PIN-protected (UM2025), admin-only content |
+| `/opmem` | OpMem | Open member drives with accepted list (TikTok info) |
+| `/mep` | Mep | MEP collection with participants + video player |
+| `/games` | Games | Game lobby hub |
+| `/games/imposter` | ImposterGame | Full room system, 15 categories × 50 words |
+| `/games/werewolf` | WerewolfGame | Night/day phases, special roles |
+| `/games/dracula` | DraculaGame | Dracula theme |
+| `/games/ludo` | LudoGame | Board visualization, dice, token movement |
+| `/leaderboard` | Leaderboard | Per-game leaderboards + XP system |
+| `/about` | About | About page |
 
-## Root Scripts
+### API Routes (all prefixed `/api`)
+- `/auth` — login, logout, me
+- `/members` — CRUD + PATCH + kick
+- `/chat` — messages, reactions, stickers, DMs
+- `/ngl` — anonymous messages + reactions + comments
+- `/photos` — gallery CRUD
+- `/memories` — timeline CRUD
+- `/links` — links CRUD
+- `/music` — music CRUD
+- `/vault` — secrets (admin-only)
+- `/opmem` — open member drives + accepted members
+- `/mep` — MEP + participants
+- `/games` — room system, game state, dice, moves
+- `/leaderboard` — per-game leaderboards
+- `/events` — admin event broadcast (rain, fireworks, etc.)
+- `/upload` — file upload (photos, videos, audio, avatars)
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+### Database Tables (Drizzle / PostgreSQL)
+- `um_members` — members with specialty, avatarUrl, kickReason
+- `um_photos` — gallery photos
+- `um_memories` — memories
+- `um_links` — links
+- `um_music` — music tracks
+- `um_secrets` — vault secrets
+- `um_opmem` — open member drives
+- `um_mep` — MEP videos
+- `um_chat_messages` — chat with reactions/stickers/replies
+- `um_chat_dms` — private DMs
+- `um_stickers` — sticker library
+- `um_ngl_messages` — NGL anonymous messages
+- `um_ngl_comments` — comments on NGL
+- `um_game_rooms` — game room state (JSON)
+- `um_game_leaderboard` — game leaderboard
+- `um_admin_events` — admin-triggered visual events
 
-## Packages
+### Dynamic UI
+- `DynamicSky.tsx` — animated starfield + particle system
+  - Exports `useTimePhase()` hook: `{ phase, icon }` (dawn/day/night)
+  - Polls `/api/events` every 10s for admin events
+  - Renders: rain, coin rain, fireworks, confetti, meteor, stars, snow, hearts, moon rise, galaxy blast
+- Time-based greeting in Home page via `useTimePhase()`
 
-### `artifacts/api-server` (`@workspace/api-server`)
+### Admin Features
+- Trigger 10 event types (visual effects for all members)
+- Add/kick/delete members + upload avatars
+- Moderate NGL, Chat, Gallery
+- Manage OpMem accepted lists
+- Admin-only vault content
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+### Vault
+- Client-side PIN: `UM2025`
+- Reveals hidden content when correct PIN entered
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+## Important Developer Notes
 
-### `lib/db` (`@workspace/db`)
+- Frontend uses `fetch('/api/...')` directly (not generated hooks) for all new features
+- File uploads stored at `/uploads/` (served as static from API server)
+- NGL GET includes comments aggregated per message
+- Members POST: `nickname` auto-defaults to `name` if not provided
+- Members PATCH: partial update for avatar, role, etc.
+- OpMem accept: `POST /api/opmem/:id/accepted`, delete: `DELETE /api/opmem/:id/accepted/:idx`
+- Game rooms: full JSON state stored in `um_game_rooms` table
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
-
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `artifacts/universe-moon` (`@workspace/universe-moon`)
-
-React + Vite frontend for Universe Moon [Um], the WhatsApp group community web app.
-
-- Entry: `src/main.tsx` → `src/App.tsx`
-- Pages: `src/pages/` — Auth, Home, Members, ExMembers, Gallery, Chat, Ngl, Leaderboard, Memories, Links, Music, Vault, OpMem, Mep, Games (+ 4 game pages), About
-- Components: `src/components/Layout/` (Sidebar, MobileNav, Layout), `src/components/Theme/DynamicSky.tsx`
-- Hooks: `src/hooks/use-auth.ts` (Zustand store with initAuth), `use-sound.ts`, `use-toast.ts`
-- Design: Dark cosmic glassmorphism — `bg-[#070707]` background, `glass` CSS utility class
-- Auth tokens: `"ADMIN UM SECRET"` → admin, `"MEMBER UM 2026"` → member
-- Vault PIN: `UM2025` (client-side validated)
-- Founded: 27 November 2025, Founder: iyuyun
-- XP system with 10 levels: Moonling→Stardust→Nebula→Comet→Galaxy→Supernova→Pulsar→Quasar→BlackHole→Universe
-- Mini-games: Imposter, Werewolf, Ludo, Dracula di Desa
-- `pnpm --filter @workspace/universe-moon run dev` — starts Vite dev server
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+## Key Constants
+- Founded: 27/11/2025
+- Founder: iyuyun
+- Admin token: `ADMIN UM SECRET`
+- Member token: `MEMBER UM 2026`
+- Vault PIN: `UM2025`
