@@ -32,8 +32,8 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(cookieParser());
 
-// Serve uploaded files statically
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+// Serve uploaded files under /api/uploads so frontend proxy can reach them
+app.use("/api/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.use("/api", router);
 

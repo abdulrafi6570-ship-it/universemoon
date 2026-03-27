@@ -35,7 +35,7 @@ const generalUpload = multer({ storage: generalStorage, limits: { fileSize: 200 
 router.post("/", generalUpload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   const subdir = detectSubdir(req.file.mimetype, req.body?.type);
-  res.json({ url: `/uploads/${subdir}/${req.file.filename}` });
+  res.json({ url: `/api/uploads/${subdir}/${req.file.filename}` });
 });
 
 function makeStorage(subdir: string) {
@@ -50,27 +50,27 @@ function makeStorage(subdir: string) {
 
 router.post("/photo", multer({ storage: makeStorage("photos"), limits: { fileSize: 20 * 1024 * 1024 } }).single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file" });
-  res.json({ url: `/uploads/photos/${req.file.filename}` });
+  res.json({ url: `/api/uploads/photos/${req.file.filename}` });
 });
 
 router.post("/video", multer({ storage: makeStorage("videos"), limits: { fileSize: 200 * 1024 * 1024 } }).single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file" });
-  res.json({ url: `/uploads/videos/${req.file.filename}` });
+  res.json({ url: `/api/uploads/videos/${req.file.filename}` });
 });
 
 router.post("/avatar", multer({ storage: makeStorage("avatars"), limits: { fileSize: 5 * 1024 * 1024 } }).single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file" });
-  res.json({ url: `/uploads/avatars/${req.file.filename}` });
+  res.json({ url: `/api/uploads/avatars/${req.file.filename}` });
 });
 
 router.post("/audio", multer({ storage: makeStorage("audio"), limits: { fileSize: 50 * 1024 * 1024 } }).single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file" });
-  res.json({ url: `/uploads/audio/${req.file.filename}` });
+  res.json({ url: `/api/uploads/audio/${req.file.filename}` });
 });
 
 router.post("/sticker", multer({ storage: makeStorage("stickers"), limits: { fileSize: 5 * 1024 * 1024 } }).single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file" });
-  res.json({ url: `/uploads/stickers/${req.file.filename}` });
+  res.json({ url: `/api/uploads/stickers/${req.file.filename}` });
 });
 
 export default router;
