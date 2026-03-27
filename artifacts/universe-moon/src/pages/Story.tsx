@@ -43,8 +43,9 @@ export default function Story() {
       toast({ title: 'Hanya foto atau video yang didukung', variant: 'destructive' });
       return;
     }
-    if (file.size > 20 * 1024 * 1024) {
-      toast({ title: 'File terlalu besar (max 20MB)', variant: 'destructive' });
+    const maxSize = isVideo ? 200 * 1024 * 1024 : 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({ title: `File terlalu besar (foto max 20MB, video max 200MB)`, variant: 'destructive' });
       return;
     }
     setMediaFile(file);
