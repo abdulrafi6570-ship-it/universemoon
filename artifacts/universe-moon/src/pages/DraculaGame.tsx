@@ -28,6 +28,7 @@ export default function DraculaGame() {
   const [actionTarget, setActionTarget] = useState('');
   const [dayVote, setDayVote] = useState('');
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [activeRooms, setActiveRooms] = useState<any[]>([]);
 
   const username = user?.username || '';
 
@@ -38,9 +39,16 @@ export default function DraculaGame() {
     } catch {}
   }, []);
 
+  const fetchActiveRooms = useCallback(() => {
+    fetch(API('/active-rooms?gameType=dracula')).then(r => r.json()).then(setActiveRooms).catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetch(API('/leaderboard/dracula')).then(r => r.json()).then(setLeaderboard).catch(() => {});
-  }, []);
+    fetchActiveRooms();
+    const id = setInterval(fetchActiveRooms, 5000);
+    return () => clearInterval(id);
+  }, [fetchActiveRooms]);
 
   useEffect(() => {
     if (!roomCode) return;
@@ -54,8 +62,10 @@ export default function DraculaGame() {
     if (res.ok) { const d = await res.json(); setRoomCode(d.code); setRoom(d); setScreen('room'); playSfx('notification'); }
   };
 
-  const joinRoom = async () => {
-    const res = await fetch(API('/room/join'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: joinCode.toUpperCase().trim(), username }) });
+  const joinRoom = async (overrideCode?: string) => {
+    const code = (overrideCode || joinCode).toUpperCase().trim();
+    if (!username || !code) return;
+    const res = await fetch(API('/room/join'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, username }) });
     if (res.ok) { const d = await res.json(); setRoomCode(d.code); setRoom(d); setScreen('room'); }
     else toast({ title: 'Kode tidak valid!', variant: 'destructive' });
   };
@@ -121,10 +131,49 @@ export default function DraculaGame() {
             <Crown className="w-5 h-5" /> Buat Room
           </button>
           <button onClick={() => setScreen('join')} className="flex items-center justify-center gap-2 px-6 py-3 glass border border-white/20 rounded-xl font-semibold hover:bg-white/10 transition-colors">
-            <Users className="w-5 h-5" /> Join Room
+            <Users className="w-5 h-5" /> Join Kode
           </button>
         </div>
       </div>
+
+      {/* Active Rooms Panel */}
+      <div className="glass rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-400 animate-pulse inline-block" /> Room Aktif</h3>
+          <span className="text-xs text-muted-foreground">{activeRooms.length} room tersedia</span>
+        </div>
+        {activeRooms.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <p className="text-3xl mb-2">🧛</p>
+            <p className="text-sm">Belum ada room. Buat dulu, teman akan lihat di sini!</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {activeRooms.map((r: any) => (
+              <div key={r.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-red-900/30 hover:border-red-600/40 transition-all">
+                <div className="font-mono text-xl font-black text-red-400 tracking-widest w-16 shrink-0">{r.code}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{r.hostUsername}</p>
+                  <p className="text-xs text-muted-foreground">{(r.players as any[]).length} pemain menunggu</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {(r.players as any[]).map((p: any) => (
+                    <div key={p.username} className="w-6 h-6 rounded-full bg-red-900/40 border border-red-800/60 flex items-center justify-center text-[9px] font-bold">{p.username.substring(0,2).toUpperCase()}</div>
+                  ))}
+                </div>
+                {username === r.hostUsername ? (
+                  <span className="px-3 py-1.5 text-xs bg-yellow-500/20 text-yellow-400 rounded-lg font-semibold">Host</span>
+                ) : (
+                  <button onClick={() => joinRoom(r.code)} className="px-3 py-1.5 text-xs bg-gradient-to-r from-red-900 to-red-800 rounded-lg font-semibold hover:opacity-90 border border-red-700/50 shrink-0">
+                    Join
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         {Object.entries(ROLES).map(([role, info]) => (
           <div key={role} className={`glass rounded-2xl p-4 border ${info.team === 'good' ? 'border-blue-500/20' : 'border-red-700/30'}`}>

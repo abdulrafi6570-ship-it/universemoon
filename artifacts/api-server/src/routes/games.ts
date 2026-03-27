@@ -216,6 +216,16 @@ router.get("/categories", (req, res) => {
   res.json(cats);
 });
 
+// Get all active (lobby) rooms for a given game type
+router.get("/active-rooms", async (req, res) => {
+  const { gameType } = req.query;
+  const where = gameType
+    ? and(eq(gameRoomsTable.status, "lobby"), eq(gameRoomsTable.gameType, gameType as string))
+    : eq(gameRoomsTable.status, "lobby");
+  const rooms = await db.select().from(gameRoomsTable).where(where).orderBy(desc(gameRoomsTable.createdAt));
+  res.json(rooms);
+});
+
 router.post("/room/create", async (req, res) => {
   const { gameType, hostUsername } = req.body;
   if (!gameType || !hostUsername) return res.status(400).json({ error: "Missing fields" });

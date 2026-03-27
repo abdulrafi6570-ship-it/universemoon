@@ -27,7 +27,6 @@ export default function Story() {
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
-  const [uploading, setUploading] = useState(false);
 
   const { data: stories = [], isLoading } = useQuery({
     queryKey: ['stories'],
@@ -66,41 +65,45 @@ export default function Story() {
       let uploadedMediaType: string | null = null;
 
       if (mediaFile) {
-        setUploading(true);
         const fd = new FormData();
         fd.append('file', mediaFile);
         const upRes = await fetch('/api/upload', { method: 'POST', body: fd });
-        if (!upRes.ok) throw new Error('Upload gagal');
+        if (!upRes.ok) {
+          const err = await upRes.json().catch(() => ({}));
+          throw new Error(err.error || 'Upload file gagal');
+        }
         const upData = await upRes.json();
         mediaUrl = upData.url;
         uploadedMediaType = mediaType;
-        setUploading(false);
       }
 
-      return fetch('/api/stories', {
+      const storyRes = await fetch('/api/stories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: user?.username,
-          content,
+          content: content || '',
           emoji,
           color,
           mediaUrl,
           mediaType: uploadedMediaType,
         }),
-      }).then(r => r.json());
+      });
+      if (!storyRes.ok) {
+        const err = await storyRes.json().catch(() => ({}));
+        throw new Error(err.error || 'Gagal membuat story');
+      }
+      return storyRes.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['stories'] });
       setContent('');
       clearMedia();
       setShowForm(false);
-      setUploading(false);
       toast({ title: '📖 Story diposting!' });
     },
-    onError: () => {
-      setUploading(false);
-      toast({ title: 'Gagal posting story', variant: 'destructive' });
+    onError: (err: any) => {
+      toast({ title: err?.message || 'Gagal posting story', variant: 'destructive' });
     },
   });
 
@@ -214,11 +217,11 @@ export default function Story() {
           <div className="flex gap-2">
             <button
               onClick={() => postMutation.mutate()}
-              disabled={!canPost || postMutation.isPending || uploading}
+              disabled={!canPost || postMutation.isPending}
               className="flex-1 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {(postMutation.isPending || uploading) ? (
-                <><Upload className="w-4 h-4 animate-bounce" /> {uploading ? 'Uploading...' : 'Posting...'}</>
+              {postMutation.isPending ? (
+                <><Upload className="w-4 h-4 animate-bounce" /> {mediaFile ? 'Uploading...' : 'Posting...'}</>
               ) : 'Post Story'}
             </button>
             <button onClick={() => { setShowForm(false); clearMedia(); }} className="px-4 py-2 text-sm text-muted-foreground hover:text-white">Batal</button>
