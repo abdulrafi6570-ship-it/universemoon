@@ -20,6 +20,7 @@ const MENU_SECTIONS = [
       { label: 'Shoutout Board', href: '/shoutout' },
       { label: 'Moodboard', href: '/moodboard' },
       { label: 'Q&A Anonim', href: '/qa' },
+      { label: 'APIPI', href: '/apipi' },
       { label: 'NGL', href: '/ngl' },
       { label: 'Voting & Poll', href: '/voting' },
     ],

@@ -145,3 +145,45 @@ export const rulesTable = pgTable("um_rules", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// ─── APIPI (Sistem Keluarga) ───────────────────────────────────────────────
+
+export const familiesTable = pgTable("um_families", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  emoji: text("emoji").default("👨‍👩‍👧‍👦"),
+  mamiUsername: text("mami_username").notNull(),
+  papiUsername: text("papi_username").notNull(),
+  level: integer("level").notNull().default(1),
+  xp: integer("xp").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const familyMembersTable = pgTable("um_family_members", {
+  id: serial("id").primaryKey(),
+  familyId: integer("family_id").notNull(),
+  username: text("username").notNull(),
+  role: text("role").notNull().default("anak"),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+});
+
+export const familyProposalsTable = pgTable("um_family_proposals", {
+  id: serial("id").primaryKey(),
+  fromUsername: text("from_username").notNull(),
+  toUsername: text("to_username").notNull(),
+  type: text("type").notNull().default("partner"),
+  familyId: integer("family_id"),
+  status: text("status").notNull().default("pending"),
+  message: text("message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const familyWallPostsTable = pgTable("um_family_wall_posts", {
+  id: serial("id").primaryKey(),
+  familyId: integer("family_id").notNull(),
+  username: text("username").notNull(),
+  content: text("content").notNull(),
+  imageUrl: text("image_url"),
+  reactions: jsonb("reactions").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

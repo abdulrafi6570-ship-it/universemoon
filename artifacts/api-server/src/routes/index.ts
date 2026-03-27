@@ -16,6 +16,7 @@ import drakorRouter from "./drakor";
 import communitySocialRouter from "./community-social";
 import communityContentRouter from "./community-content";
 import communityDataRouter from "./community-data";
+import apipiRouter from "./apipi";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use("/drakor", drakorRouter);
 router.use(communitySocialRouter);
 router.use(communityContentRouter);
 router.use(communityDataRouter);
+router.use("/apipi", apipiRouter);
 
 export default router;

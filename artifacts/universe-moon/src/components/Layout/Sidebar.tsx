@@ -6,7 +6,7 @@ import {
   MessageCircle, Ghost, Music, Key, UsersRound, Video, Gamepad2, Trophy,
   Info, LogOut, CheckSquare, Tv, ShieldCheck, User, Cake, BookMarked,
   Zap, BookHeart, Megaphone, SmilePlus, Package, HelpCircle, ListMusic,
-  Laugh, Quote, PenSquare, Sticker, Medal, BarChart3, Flag, Clock
+  Laugh, Quote, PenSquare, Sticker, Medal, BarChart3, Flag, Clock, Heart
 } from 'lucide-react';
 import { useLogout } from '@workspace/api-client-react';
 
@@ -25,6 +25,7 @@ const NAV_ITEMS = [
   { section: 'Sosial' },
   { label: 'Chat', href: '/chat', icon: MessageCircle },
   { label: 'NGL / Pesan', href: '/ngl', icon: Ghost },
+  { label: 'APIPI (Keluarga)', href: '/apipi', icon: Heart },
   { label: 'Shoutout Board', href: '/shoutout', icon: Megaphone },
   { label: 'Moodboard', href: '/moodboard', icon: SmilePlus },
   { label: 'Q&A Anonim', href: '/qa', icon: HelpCircle },

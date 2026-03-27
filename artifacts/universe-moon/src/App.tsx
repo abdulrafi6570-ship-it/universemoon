@@ -50,6 +50,7 @@ import HallOfFame from "@/pages/HallOfFame";
 import Stats from "@/pages/Stats";
 import Milestones from "@/pages/Milestones";
 import Diary from "@/pages/Diary";
+import Apipi from "@/pages/Apipi";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -190,6 +191,9 @@ function Router() {
       </Route>
       <Route path="/diary">
         <Layout><Diary /></Layout>
+      </Route>
+      <Route path="/apipi">
+        <Layout><Apipi /></Layout>
       </Route>
 
       <Route component={NotFound} />
