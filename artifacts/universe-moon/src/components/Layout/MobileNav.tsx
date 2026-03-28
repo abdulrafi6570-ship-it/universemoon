@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, Home, MessageCircle, Users, Image as ImageIcon, Trophy, Zap } from 'lucide-react';
+import { Menu, X, Home, MessageCircle, Users, Image as ImageIcon, Trophy, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/hooks/use-auth';
+import { useLogout } from '@workspace/api-client-react';
 
 const BOTTOM_LINKS = [
   { label: 'Home', href: '/', icon: Home },
@@ -72,7 +73,13 @@ const MENU_SECTIONS = [
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
-  const { user } = useAuthStore();
+  const { user, isGuest, logoutLocal } = useAuthStore();
+  const logoutMutation = useLogout();
+
+  const handleLogout = async () => {
+    setIsOpen(false);
+    try { await logoutMutation.mutateAsync(); } finally { logoutLocal(); }
+  };
 
   return (
     <div className="md:hidden">
@@ -175,6 +182,27 @@ export function MobileNav() {
               <Link href="/ex-members" onClick={() => setIsOpen(false)} className="glass-hover p-3 rounded-xl text-center text-xs text-muted-foreground mt-3 block">
                 Ex-Members
               </Link>
+
+              {/* Logout */}
+              <div className="mt-4 pt-4 border-t border-white/10">
+                {!isGuest ? (
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl text-sm font-semibold text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Keluar / Logout
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { logoutLocal(); setIsOpen(false); }}
+                    className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl text-sm font-semibold text-muted-foreground border border-white/10 hover:bg-white/5 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Keluar dari Guest Mode
+                  </button>
+                )}
+              </div>
             </motion.div>
           </>
         )}
