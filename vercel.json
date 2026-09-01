@@ -1,0 +1,7 @@
+{
+  "buildCommand": "corepack enable && corepack prepare pnpm@9 --activate && pnpm install --frozen-lockfile && pnpm --filter @workspace/universe-moon build",
+  "outputDirectory": "artifacts/universe-moon/dist/public",
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
