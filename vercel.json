@@ -2,8 +2,9 @@
   "installCommand": "corepack enable && corepack prepare pnpm@9 --activate && pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm --filter @workspace/api-server run build:fn && pnpm --filter @workspace/universe-moon build",
   "outputDirectory": "artifacts/universe-moon/dist/public",
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "/api" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
