@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://GANTI-DENGAN-URL-BACKEND-ABASTHAN.abasthan.app/api/:path*"
+    }
+  ]
+}
