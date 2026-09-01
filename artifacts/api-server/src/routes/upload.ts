@@ -1,16 +1,12 @@
 import { Router } from "express";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
+import { uploadBufferToR2 } from "../lib/r2";
 
 const router = Router();
 
-const UPLOAD_DIR = path.join(process.cwd(), "uploads");
-const SUBDIRS = ["photos", "videos", "avatars", "audio", "stickers"];
-SUBDIRS.forEach(d => {
-  const p = path.join(UPLOAD_DIR, d);
-  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
-});
+// Files are buffered in memory, then streamed to Cloudflare R2 — no local disk
+// writes, since the backend's filesystem is ephemeral in production.
+const memoryUpload = multer({ storage: multer.memoryStorage() });
 
 function detectSubdir(mimetype: string, typeHint?: string): string {
   if (typeHint === "avatar") return "avatars";
@@ -20,57 +16,46 @@ function detectSubdir(mimetype: string, typeHint?: string): string {
   return "photos";
 }
 
-const generalStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const subdir = detectSubdir(file.mimetype, (req as any).body?.type);
-    cb(null, path.join(UPLOAD_DIR, subdir));
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  },
-});
-const generalUpload = multer({ storage: generalStorage, limits: { fileSize: 200 * 1024 * 1024 } });
+const LIMITS: Record<string, number> = {
+  photos: 20 * 1024 * 1024,
+  videos: 200 * 1024 * 1024,
+  avatars: 5 * 1024 * 1024,
+  audio: 50 * 1024 * 1024,
+  stickers: 5 * 1024 * 1024,
+};
 
-router.post("/", generalUpload.single("file"), (req, res) => {
+router.post("/", memoryUpload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   const subdir = detectSubdir(req.file.mimetype, req.body?.type);
-  res.json({ url: `/api/uploads/${subdir}/${req.file.filename}` });
+  if (req.file.size > LIMITS[subdir]) {
+    return res.status(413).json({ error: "File too large" });
+  }
+  try {
+    const { url } = await uploadBufferToR2(subdir, req.file);
+    res.json({ url });
+  } catch (err) {
+    req.log?.error({ err }, "R2 upload failed");
+    res.status(502).json({ error: "Upload to storage failed" });
+  }
 });
 
-function makeStorage(subdir: string) {
-  return multer.diskStorage({
-    destination: (req, file, cb) => cb(null, path.join(UPLOAD_DIR, subdir)),
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname);
-      cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-    },
-  });
+function makeRoute(subdir: string) {
+  return async (req: any, res: any) => {
+    if (!req.file) return res.status(400).json({ error: "No file" });
+    try {
+      const { url } = await uploadBufferToR2(subdir, req.file);
+      res.json({ url });
+    } catch (err) {
+      req.log?.error({ err }, "R2 upload failed");
+      res.status(502).json({ error: "Upload to storage failed" });
+    }
+  };
 }
 
-router.post("/photo", multer({ storage: makeStorage("photos"), limits: { fileSize: 20 * 1024 * 1024 } }).single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file" });
-  res.json({ url: `/api/uploads/photos/${req.file.filename}` });
-});
-
-router.post("/video", multer({ storage: makeStorage("videos"), limits: { fileSize: 200 * 1024 * 1024 } }).single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file" });
-  res.json({ url: `/api/uploads/videos/${req.file.filename}` });
-});
-
-router.post("/avatar", multer({ storage: makeStorage("avatars"), limits: { fileSize: 5 * 1024 * 1024 } }).single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file" });
-  res.json({ url: `/api/uploads/avatars/${req.file.filename}` });
-});
-
-router.post("/audio", multer({ storage: makeStorage("audio"), limits: { fileSize: 50 * 1024 * 1024 } }).single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file" });
-  res.json({ url: `/api/uploads/audio/${req.file.filename}` });
-});
-
-router.post("/sticker", multer({ storage: makeStorage("stickers"), limits: { fileSize: 5 * 1024 * 1024 } }).single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file" });
-  res.json({ url: `/api/uploads/stickers/${req.file.filename}` });
-});
+router.post("/photo", multer({ storage: multer.memoryStorage(), limits: { fileSize: LIMITS.photos } }).single("file"), makeRoute("photos"));
+router.post("/video", multer({ storage: multer.memoryStorage(), limits: { fileSize: LIMITS.videos } }).single("file"), makeRoute("videos"));
+router.post("/avatar", multer({ storage: multer.memoryStorage(), limits: { fileSize: LIMITS.avatars } }).single("file"), makeRoute("avatars"));
+router.post("/audio", multer({ storage: multer.memoryStorage(), limits: { fileSize: LIMITS.audio } }).single("file"), makeRoute("audio"));
+router.post("/sticker", multer({ storage: multer.memoryStorage(), limits: { fileSize: LIMITS.stickers } }).single("file"), makeRoute("stickers"));
 
 export default router;
