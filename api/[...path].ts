@@ -1,3 +1,5 @@
+// @ts-ignore — dist-fn/app.mjs is a plain JS bundle produced by esbuild at
+// build time, it has no .d.ts declaration file.
 import app from "../artifacts/api-server/dist-fn/app.mjs";
 
 // The Express app does its own body parsing (express.json/urlencoded) —
