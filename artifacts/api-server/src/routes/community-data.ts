@@ -4,9 +4,9 @@ import {
   milestonesTable, diaryTable, diaryEntriesTable, birthdaysTable,
   usersTable, membersTable, chatMessagesTable, photosTable,
   memoriesTable, musicTable, gameLeaderboardTable, fanficsTable, memesTable,
-  shoutoutsTable, moodsTable
+  shoutoutsTable, moodsTable, sessionsTable
 } from "@workspace/db";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { eq, desc, count, sql, and, gt } from "drizzle-orm";
 
 const router = Router();
 
@@ -195,6 +195,55 @@ router.get("/profile/:username", async (req, res) => {
     photoCount: myPhotos.length,
     shoutoutsReceived: myShoutoutsReceived.slice(0, 5),
   });
+});
+
+// Update (or create, if it doesn't exist yet) the logged-in user's community
+// profile — nickname, bio, favorite song, social links, avatar. Used both
+// during the optional "complete your profile" step right after registering,
+// and later from the Profile page's edit form.
+router.patch("/profile", async (req, res) => {
+  const token = req.cookies?.session_token || req.headers.authorization?.replace("Bearer ", "");
+  if (!token) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  const [session] = await db.select().from(sessionsTable).where(
+    and(eq(sessionsTable.sessionToken, token), gt(sessionsTable.expiresAt, new Date()))
+  );
+  if (!session) {
+    return res.status(401).json({ error: "Session expired" });
+  }
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId));
+  if (!user) {
+    return res.status(401).json({ error: "User not found" });
+  }
+
+  const { nickname, bio, favoriteSong, socialLinks, avatarUrl } = req.body;
+
+  const [existing] = await db.select().from(membersTable).where(eq(membersTable.name, user.username));
+
+  if (existing) {
+    await db.update(membersTable)
+      .set({
+        nickname: nickname ?? existing.nickname,
+        bio: bio ?? existing.bio,
+        favoriteSong: favoriteSong ?? existing.favoriteSong,
+        socialLinks: socialLinks ?? existing.socialLinks,
+        avatarUrl: avatarUrl ?? existing.avatarUrl,
+      })
+      .where(eq(membersTable.id, existing.id));
+  } else {
+    await db.insert(membersTable).values({
+      name: user.username,
+      nickname: nickname || user.username,
+      bio: bio || null,
+      favoriteSong: favoriteSong || null,
+      socialLinks: socialLinks || null,
+      avatarUrl: avatarUrl || null,
+    });
+  }
+
+  const [updated] = await db.select().from(membersTable).where(eq(membersTable.name, user.username));
+  return res.json({ success: true, member: updated });
 });
 
 export default router;
