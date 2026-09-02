@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 
 const ToastProvider = ToastPrimitives.Provider
 
-const ToastViewport = React.forwardRef
+const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
 >(({ className, ...props }, ref) => (
