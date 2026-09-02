@@ -13,6 +13,11 @@ export default function Profile() {
   const [editingMood, setEditingMood] = useState(false);
   const [moodText, setMoodText] = useState('');
   const [moodEmoji, setMoodEmoji] = useState('😊');
+  const [editingInfo, setEditingInfo] = useState(false);
+  const [nicknameEdit, setNicknameEdit] = useState('');
+  const [bioEdit, setBioEdit] = useState('');
+  const [songEdit, setSongEdit] = useState('');
+  const [isSavingInfo, setIsSavingInfo] = useState(false);
 
   const MOOD_EMOJIS = ['😊','🌙','⭐','🔥','💫','😴','🎵','💜','🌊','✨','😂','❤️','🌸','💪','🎉'];
 
@@ -34,6 +39,30 @@ export default function Profile() {
     refetch();
     setEditingMood(false);
     toast({ title: 'Mood updated!' });
+  };
+
+  const startEditInfo = () => {
+    setNicknameEdit(profile?.member?.nickname || '');
+    setBioEdit(profile?.member?.bio || '');
+    setSongEdit(profile?.member?.favoriteSong || '');
+    setEditingInfo(true);
+  };
+
+  const saveInfo = async () => {
+    setIsSavingInfo(true);
+    try {
+      await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: nicknameEdit, bio: bioEdit, favoriteSong: songEdit }),
+      });
+      await refetch();
+      setEditingInfo(false);
+      toast({ title: 'Profil disimpan!' });
+    } catch {
+      toast({ title: 'Gagal menyimpan', variant: 'destructive' });
+    }
+    setIsSavingInfo(false);
   };
 
   if (isLoading) return (
@@ -130,9 +159,16 @@ export default function Profile() {
       </div>
 
       {/* Member Info */}
-      {profile.member && (
+      {profile.member && !editingInfo && (
         <div className="glass rounded-2xl p-5 mb-6">
-          <h2 className="font-bold mb-4 flex items-center gap-2"><Award className="w-4 h-4 text-yellow-400" /> Info Anggota</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold flex items-center gap-2"><Award className="w-4 h-4 text-yellow-400" /> Info Anggota</h2>
+            {isOwn && (
+              <button onClick={startEditInfo} className="text-white/40 hover:text-white transition-colors">
+                <Edit2 className="w-3 h-3" />
+              </button>
+            )}
+          </div>
           <div className="space-y-3 text-sm">
             {profile.member.nickname && (
               <div className="flex items-center gap-3">
@@ -170,6 +206,37 @@ export default function Profile() {
                 <span className="italic">"{profile.member.favoriteSong}"</span>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {isOwn && !profile.member && !editingInfo && (
+        <div className="glass rounded-2xl p-5 mb-6 text-center">
+          <p className="text-sm text-muted-foreground mb-3">Kamu belum lengkapi info profil.</p>
+          <button onClick={startEditInfo} className="text-sm text-primary hover:underline">+ Lengkapi info anggota</button>
+        </div>
+      )}
+
+      {isOwn && editingInfo && (
+        <div className="glass rounded-2xl p-5 mb-6 space-y-3 text-left">
+          <h2 className="font-bold mb-1 flex items-center gap-2"><Award className="w-4 h-4 text-yellow-400" /> Edit Info Anggota</h2>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Nickname</label>
+            <input value={nicknameEdit} onChange={e => setNicknameEdit(e.target.value)} className="um-input w-full text-sm" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Bio</label>
+            <textarea value={bioEdit} onChange={e => setBioEdit(e.target.value)} rows={3} className="um-input w-full text-sm resize-none" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Lagu favorit</label>
+            <input value={songEdit} onChange={e => setSongEdit(e.target.value)} className="um-input w-full text-sm" />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={saveInfo} disabled={isSavingInfo} className="flex-1 bg-white text-black font-semibold rounded-xl py-2 text-sm hover:bg-gray-200 transition-colors">
+              {isSavingInfo ? 'Menyimpan...' : 'Simpan'}
+            </button>
+            <button onClick={() => setEditingInfo(false)} className="flex-1 text-sm text-muted-foreground hover:text-white rounded-xl py-2">Batal</button>
           </div>
         </div>
       )}
