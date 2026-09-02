@@ -34,7 +34,8 @@ export default function Auth() {
       }
     } catch (err: any) {
       playSfx('error');
-      toast({ title: "Login Failed", description: err.message || "Invalid credentials", variant: "destructive" });
+      const cleanMessage = err?.data?.error || "Username atau password salah";
+      toast({ title: "Login Gagal", description: cleanMessage, variant: "destructive" });
     }
   };
 
@@ -62,7 +63,8 @@ export default function Auth() {
       setPassword('');
     } catch (err: any) {
       playSfx('error');
-      toast({ title: "Registration Failed", description: err.message || "Username mungkin sudah ada.", variant: "destructive" });
+      const cleanMessage = err?.data?.error || "Username mungkin sudah ada.";
+      toast({ title: "Pendaftaran Gagal", description: cleanMessage, variant: "destructive" });
     }
   };
 
