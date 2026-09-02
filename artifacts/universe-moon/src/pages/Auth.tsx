@@ -9,10 +9,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useSound } from '@/hooks/use-sound';
 
 export default function Auth() {
-  const [mode, setMode] = useState<'login' | 'register' | 'token'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'token' | 'setup-profile'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [token, setToken] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [bio, setBio] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   
   const loginMutation = useLogin();
   const registerMutation = useRegister();
@@ -58,14 +61,36 @@ export default function Auth() {
     playSfx('click');
     try {
       await registerMutation.mutateAsync({ data: { username, password, token } });
-      toast({ title: "Welcome to Universe Moon!", description: "Silahkan login dengan akun barumu." });
-      setMode('login');
-      setPassword('');
+      // Log the fresh account in right away so the optional profile step
+      // below (nickname/bio) can save via an authenticated request.
+      await loginMutation.mutateAsync({ data: { username, password } });
+      toast({ title: "Welcome to Universe Moon!", description: "Akun berhasil dibuat." });
+      setMode('setup-profile');
     } catch (err: any) {
       playSfx('error');
       const cleanMessage = err?.data?.error || "Username mungkin sudah ada.";
       toast({ title: "Pendaftaran Gagal", description: cleanMessage, variant: "destructive" });
     }
+  };
+
+  const finishProfileSetup = async (skip: boolean) => {
+    playSfx('click');
+    if (!skip) {
+      setIsSavingProfile(true);
+      try {
+        await fetch('/api/profile', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname: nickname || undefined, bio: bio || undefined }),
+        });
+      } catch {
+        // Non-fatal — they can always fill this in later from their profile page.
+      }
+      setIsSavingProfile(false);
+    }
+    const res = await fetch('/api/auth/me').then(r => r.ok ? r.json() : null).catch(() => null);
+    if (res) setUser(res);
+    setLocation('/');
   };
 
   const handleGuest = () => {
@@ -149,6 +174,26 @@ export default function Auth() {
               </button>
               <button type="button" onClick={() => setMode('login')} className="w-full text-sm text-muted-foreground hover:text-white mt-4">Batal</button>
             </motion.form>
+          )}
+
+          {mode === 'setup-profile' && (
+            <motion.div key="setup-profile" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-4">
+              <div className="bg-primary/10 border border-primary/20 text-primary p-3 rounded-xl text-xs mb-4 flex items-center gap-2">
+                <Star className="w-4 h-4"/> Opsional — bisa diisi/diubah kapan saja lewat halaman Profil Saya.
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">Nama Panggilan</label>
+                <input value={nickname} onChange={e => setNickname(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors" placeholder="Boleh dikosongin" />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">Bio</label>
+                <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors resize-none" placeholder="Ceritain dikit tentang kamu..." />
+              </div>
+              <button type="button" disabled={isSavingProfile} onClick={() => finishProfileSetup(false)} className="w-full bg-white text-black font-semibold rounded-xl py-3 mt-2 hover:bg-gray-200 transition-colors flex justify-center items-center">
+                {isSavingProfile ? <Loader2 className="w-5 h-5 animate-spin" /> : "Simpan & Lanjut"}
+              </button>
+              <button type="button" onClick={() => finishProfileSetup(true)} className="w-full text-sm text-muted-foreground hover:text-white mt-2">Lewati, isi nanti aja</button>
+            </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
