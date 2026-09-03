@@ -17,6 +17,8 @@ export default function Profile() {
   const [nicknameEdit, setNicknameEdit] = useState('');
   const [bioEdit, setBioEdit] = useState('');
   const [songEdit, setSongEdit] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSavingInfo, setIsSavingInfo] = useState(false);
 
   const MOOD_EMOJIS = ['😊','🌙','⭐','🔥','💫','😴','🎵','💜','🌊','✨','😂','❤️','🌸','💪','🎉'];
@@ -45,16 +47,32 @@ export default function Profile() {
     setNicknameEdit(profile?.member?.nickname || '');
     setBioEdit(profile?.member?.bio || '');
     setSongEdit(profile?.member?.favoriteSong || '');
+    setAvatarPreview(null);
+    setAvatarFile(null);
     setEditingInfo(true);
+  };
+
+  const handleAvatarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
   };
 
   const saveInfo = async () => {
     setIsSavingInfo(true);
     try {
+      let avatarUrl: string | undefined;
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append('file', avatarFile);
+        const uploadRes = await fetch('/api/upload/avatar', { method: 'POST', body: formData }).then(r => r.json());
+        avatarUrl = uploadRes.url;
+      }
       await fetch('/api/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname: nicknameEdit, bio: bioEdit, favoriteSong: songEdit }),
+        body: JSON.stringify({ nickname: nicknameEdit, bio: bioEdit, favoriteSong: songEdit, avatarUrl }),
       });
       await refetch();
       setEditingInfo(false);
@@ -220,6 +238,21 @@ export default function Profile() {
       {isOwn && editingInfo && (
         <div className="glass rounded-2xl p-5 mb-6 space-y-3 text-left">
           <h2 className="font-bold mb-1 flex items-center gap-2"><Award className="w-4 h-4 text-yellow-400" /> Edit Info Anggota</h2>
+          <div className="flex flex-col items-center gap-2">
+            <label htmlFor="avatar-pick-profile" className="cursor-pointer">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="preview" className="w-20 h-20 rounded-full object-cover ring-2 ring-white/20" />
+              ) : profile.avatarUrl ? (
+                <img src={profile.avatarUrl} alt="current" className="w-20 h-20 rounded-full object-cover ring-2 ring-white/20" />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-xs text-muted-foreground text-center ring-2 ring-white/10">
+                  Pilih<br/>Foto
+                </div>
+              )}
+            </label>
+            <input id="avatar-pick-profile" type="file" accept="image/*" onChange={handleAvatarPick} className="hidden" />
+            <label htmlFor="avatar-pick-profile" className="text-xs text-primary hover:underline cursor-pointer">Ambil dari galeri</label>
+          </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Nickname</label>
             <input value={nicknameEdit} onChange={e => setNicknameEdit(e.target.value)} className="um-input w-full text-sm" />
