@@ -1,8 +1,27 @@
 import { Router } from "express";
 import multer from "multer";
-import { uploadBufferToR2 } from "../lib/r2";
+import { uploadBufferToR2, createPresignedUpload } from "../lib/r2";
 
 const router = Router();
+
+// For big files (video especially), the browser asks here for a one-time
+// signed URL, then PUTs the file bytes straight to R2 itself — the file
+// never passes through this Vercel function, sidestepping its ~4.5MB
+// request body limit.
+router.post("/presign", async (req, res) => {
+  const { filename, contentType, type } = req.body || {};
+  if (!filename || !contentType) {
+    return res.status(400).json({ error: "filename and contentType are required" });
+  }
+  const subdir = type === "video" ? "videos" : type === "audio" ? "audio" : "photos";
+  try {
+    const { uploadUrl, publicUrl } = await createPresignedUpload(subdir, filename, contentType);
+    res.json({ uploadUrl, url: publicUrl });
+  } catch (err) {
+    req.log?.error({ err }, "Failed to create presigned upload URL");
+    res.status(502).json({ error: "Could not prepare upload" });
+  }
+});
 
 // Files are buffered in memory, then streamed to Cloudflare R2 — no local disk
 // writes, since the backend's filesystem is ephemeral in production.
