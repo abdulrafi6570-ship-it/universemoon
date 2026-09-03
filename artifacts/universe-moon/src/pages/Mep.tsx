@@ -103,11 +103,19 @@ export default function MepPage() {
     try {
       let fileUrl = '';
       if (file) {
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('type', 'video');
-        const upRes = await fetch('/api/upload', { method: 'POST', body: fd });
-        if (upRes.ok) { const d = await upRes.json(); fileUrl = d.url; }
+        const presignRes = await fetch('/api/upload/presign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: file.name, contentType: file.type, type: 'video' }),
+        });
+        if (presignRes.ok) {
+          const { uploadUrl, url } = await presignRes.json();
+          const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+          if (putRes.ok) fileUrl = url;
+        }
+        if (!fileUrl) {
+          toast({ title: 'Upload video gagal', description: 'MEP tetap dibuat tanpa file video.', variant: 'destructive' });
+        }
       }
       await fetch('/api/mep', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
