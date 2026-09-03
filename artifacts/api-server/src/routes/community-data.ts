@@ -219,6 +219,10 @@ router.patch("/profile", async (req, res) => {
 
   const { nickname, bio, favoriteSong, socialLinks, avatarUrl } = req.body;
 
+  if (avatarUrl) {
+    await db.update(usersTable).set({ avatarUrl }).where(eq(usersTable.id, user.id));
+  }
+
   const [existing] = await db.select().from(membersTable).where(eq(membersTable.name, user.username));
 
   if (existing) {
