@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const REQUIRED_ENV = ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME", "R2_PUBLIC_URL"] as const;
 
@@ -49,4 +50,26 @@ export async function uploadBufferToR2(
   );
 
   return { key, url: `${publicBaseUrl}/${key}` };
+}
+
+/**
+ * For large files (video, audio) the browser uploads DIRECTLY to R2 using a
+ * short-lived signed PUT URL — this avoids routing the file bytes through
+ * our Vercel serverless function, which has a hard ~4.5MB request body limit.
+ */
+export async function createPresignedUpload(
+  subdir: string,
+  originalname: string,
+  contentType: string,
+): Promise<{ uploadUrl: string; publicUrl: string }> {
+  const filename = randomFilename(originalname);
+  const key = `${subdir}/${filename}`;
+
+  const uploadUrl = await getSignedUrl(
+    r2,
+    new PutObjectCommand({ Bucket: bucketName, Key: key, ContentType: contentType }),
+    { expiresIn: 300 },
+  );
+
+  return { uploadUrl, publicUrl: `${publicBaseUrl}/${key}` };
 }
