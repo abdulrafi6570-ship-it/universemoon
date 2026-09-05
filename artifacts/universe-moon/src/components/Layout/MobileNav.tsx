@@ -43,6 +43,7 @@ const MENU_SECTIONS = [
       { label: 'Mini Diary', href: '/diary' },
       { label: 'Birthday', href: '/birthday' },
       { label: 'Hall of Fame', href: '/hall-of-fame' },
+      { label: 'Battle', href: '/battle' },
       { label: 'Statistik', href: '/stats' },
       { label: 'Milestones', href: '/milestones' },
     ],
