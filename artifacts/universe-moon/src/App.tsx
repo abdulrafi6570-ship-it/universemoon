@@ -108,6 +108,13 @@ function Router() {
       <Route path="/mep">
         <Layout><Mep /></Layout>
       </Route>
+
+            <Route path="/battle">
+        <Layout><Battle /></Layout>
+      </Route>
+      <Route path="/battle/:id">
+        <Layout><Battle /></Layout>
+      </Route>
       
       <Route path="/games">
         <Layout><Games /></Layout>
