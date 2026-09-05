@@ -6,7 +6,7 @@ import {
   MessageCircle, Ghost, Music, Key, UsersRound, Video, Gamepad2, Trophy,
   Info, LogOut, CheckSquare, Tv, ShieldCheck, User, Cake, BookMarked,
   Zap, BookHeart, Megaphone, SmilePlus, Package, HelpCircle, ListMusic,
-  Laugh, Quote, PenSquare, Sticker, Medal, BarChart3, Flag, Clock, Heart
+  Laugh, Quote, PenSquare, Sticker, Medal, BarChart3, Flag, Clock, Heart, Swords,
 } from 'lucide-react';
 import { useLogout } from '@workspace/api-client-react';
 
@@ -41,6 +41,7 @@ const NAV_ITEMS = [
   { label: 'Mini Diary Grup', href: '/diary', icon: BookHeart },
   { label: 'Birthday Tracker', href: '/birthday', icon: Cake },
   { label: 'Hall of Fame', href: '/hall-of-fame', icon: Medal },
+    { label: 'Battle', href: '/battle', icon: Swords },
   { section: 'Media' },
   { label: 'Musik', href: '/music', icon: Music },
   { label: 'MEP Videos', href: '/mep', icon: Video },
