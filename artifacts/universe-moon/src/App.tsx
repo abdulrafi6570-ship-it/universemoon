@@ -22,6 +22,7 @@ import Vault from "@/pages/Vault";
 import ExMembers from "@/pages/ExMembers";
 import OpMem from "@/pages/OpMem";
 import Mep from "@/pages/Mep";
+import Battle from "@/pages/Battle";
 import Games from "@/pages/Games";
 import ImposterGame from "@/pages/ImposterGame";
 import WerewolfGame from "@/pages/WerewolfGame";
