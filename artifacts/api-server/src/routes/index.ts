@@ -17,6 +17,7 @@ import communitySocialRouter from "./community-social";
 import communityContentRouter from "./community-content";
 import communityDataRouter from "./community-data";
 import apipiRouter from "./apipi";
+import battlesRouter from "./battles";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use(communitySocialRouter);
 router.use(communityContentRouter);
 router.use(communityDataRouter);
 router.use("/apipi", apipiRouter);
+router.use(battlesRouter);
 
 export default router;
