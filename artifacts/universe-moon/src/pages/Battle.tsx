@@ -3,7 +3,7 @@ import { useParams, useLocation } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { Trophy, Plus, Upload, Swords, Medal, ChevronLeft } from 'lucide-react';
+import { Trophy, Plus, Upload, Swords, Medal, ChevronLeft, Download, Lock, Video as VideoIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 type Match = {
@@ -13,7 +13,9 @@ type Match = {
   name1: string | null;
   name2: string | null;
   winnerName: string | null;
-  videoUrl: string | null;
+  submission1Url?: string | null;
+  submission2Url?: string | null;
+  resultVideoUrl: string | null;
 };
 
 type BattleDetail = {
@@ -25,7 +27,7 @@ type BattleDetail = {
   matches: Match[];
 };
 
-async function uploadMatchVideo(file: File): Promise<string | null> {
+async function uploadVideoToR2(file: File): Promise<string | null> {
   const presignRes = await fetch('/api/upload/presign', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -139,48 +141,77 @@ function BattleList() {
   );
 }
 
-function MatchCard({ match, isTeam, canEdit, onSetWinner, onUploadVideo }: {
-  match: Match; isTeam: boolean; canEdit: boolean;
-  onSetWinner: (matchId: number, name: string) => void;
-  onUploadVideo: (matchId: number, file: File) => void;
+function SideRow({ name, isWinner, canSubmit, canSetWinner, submissionUrl, isAdmin, onSetWinner, onSubmit }: {
+  name: string | null; isWinner: boolean; canSubmit: boolean; canSetWinner: boolean;
+  submissionUrl?: string | null; isAdmin: boolean;
+  onSetWinner: () => void; onSubmit: (file: File) => void;
 }) {
-  const label = isTeam ? 'Tim' : 'Peserta';
-  const empty = !match.name1 && !match.name2;
   return (
-    <div className="glass rounded-xl p-3 min-w-[180px] space-y-1.5">
-      {[match.name1, match.name2].map((name, idx) => (
-        <div key={idx}
-          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-sm ${
-            name && match.winnerName === name ? 'bg-yellow-500/20 text-yellow-300 font-semibold' : 'bg-white/5'
-          }`}>
-          <span className="truncate">{name || (empty ? `${label} ?` : '—')}</span>
-          {canEdit && name && !match.winnerName && (
-            <button onClick={() => onSetWinner(match.id, name)} className="text-[10px] text-primary hover:underline shrink-0 ml-2">
-              Menang
-            </button>
+    <div className={`rounded-lg px-2.5 py-1.5 text-sm ${isWinner ? 'bg-yellow-500/20 text-yellow-300 font-semibold' : 'bg-white/5'}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate">{name || '—'}</span>
+        <div className="flex items-center gap-2 shrink-0">
+          {name && canSetWinner && (
+            <button onClick={onSetWinner} className="text-[10px] text-primary hover:underline">Menang</button>
           )}
         </div>
-      ))}
-      {canEdit && (
-        <label className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-white cursor-pointer pt-1">
-          <Upload className="w-3 h-3" />
-          {match.videoUrl ? 'Ganti video' : 'Upload video pertandingan'}
+      </div>
+      {name && canSubmit && (
+        <label className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-white cursor-pointer mt-1">
+          <Upload className="w-3 h-3" /> Upload video timmu
           <input type="file" accept="video/*" className="hidden"
-            onChange={e => { const f = e.target.files?.[0]; if (f) onUploadVideo(match.id, f); }} />
+            onChange={e => { const f = e.target.files?.[0]; if (f) onSubmit(f); }} />
         </label>
       )}
-      {match.videoUrl && (
-        <video src={match.videoUrl} controls className="w-full rounded-lg mt-1 bg-black" />
+      {isAdmin && submissionUrl && (
+        <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+          <Lock className="w-3 h-3" /> Submission masuk
+          <a href={submissionUrl} download target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-0.5">
+            <Download className="w-3 h-3" /> Unduh
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MatchCard({ match, isAdmin, canSubmitVideo, onSetWinner, onSubmitVideo, onSetResultVideo }: {
+  match: Match; isAdmin: boolean; canSubmitVideo: boolean;
+  onSetWinner: (matchId: number, name: string) => void;
+  onSubmitVideo: (matchId: number, slot: 1 | 2, file: File) => void;
+  onSetResultVideo: (matchId: number, file: File) => void;
+}) {
+  const decided = !!match.winnerName;
+  const bothPresent = !!match.name1 && !!match.name2;
+  return (
+    <div className="glass rounded-xl p-3 min-w-[180px] space-y-1.5">
+      <SideRow name={match.name1} isWinner={match.winnerName === match.name1}
+        canSubmit={canSubmitVideo && bothPresent && !decided} canSetWinner={isAdmin && bothPresent && !decided}
+        submissionUrl={match.submission1Url} isAdmin={isAdmin}
+        onSetWinner={() => match.name1 && onSetWinner(match.id, match.name1)}
+        onSubmit={f => onSubmitVideo(match.id, 1, f)} />
+      <SideRow name={match.name2} isWinner={match.winnerName === match.name2}
+        canSubmit={canSubmitVideo && bothPresent && !decided} canSetWinner={isAdmin && bothPresent && !decided}
+        submissionUrl={match.submission2Url} isAdmin={isAdmin}
+        onSetWinner={() => match.name2 && onSetWinner(match.id, match.name2)}
+        onSubmit={f => onSubmitVideo(match.id, 2, f)} />
+      {isAdmin && bothPresent && (
+        <label className="flex items-center gap-1 text-[10px] text-primary hover:underline cursor-pointer pt-1 border-t border-white/10">
+          <VideoIcon className="w-3 h-3" /> {match.resultVideoUrl ? 'Ganti video hasil' : 'Upload video hasil (publik)'}
+          <input type="file" accept="video/*" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) onSetResultVideo(match.id, f); }} />
+        </label>
       )}
     </div>
   );
 }
 
 function BattleDetailPage({ id }: { id: number }) {
-  const { user } = useAuthStore();
+  const { user, isGuest } = useAuthStore();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const isAdmin = user?.role === 'admin';
+  const canSubmitVideo = !!user && !isGuest;
 
   const { data: battle, refetch } = useQuery<BattleDetail>({
     queryKey: ['battle', id],
@@ -195,16 +226,28 @@ function BattleDetailPage({ id }: { id: number }) {
     refetch();
   };
 
-  const uploadVideo = async (matchId: number, file: File) => {
+  const submitVideo = async (matchId: number, slot: 1 | 2, file: File) => {
     toast({ title: 'Mengunggah video...' });
-    const url = await uploadMatchVideo(file);
+    const url = await uploadVideoToR2(file);
     if (!url) return toast({ title: 'Upload gagal', variant: 'destructive' });
-    await fetch(`/api/battles/${id}/matches/${matchId}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ videoUrl: url }),
+    await fetch(`/api/battles/${id}/matches/${matchId}/submit`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slot, url }),
     });
     refetch();
-    toast({ title: 'Video pertandingan tersimpan!' });
+    toast({ title: 'Video terkirim ke admin!' });
+  };
+
+  const setResultVideo = async (matchId: number, file: File) => {
+    toast({ title: 'Mengunggah video hasil...' });
+    const url = await uploadVideoToR2(file);
+    if (!url) return toast({ title: 'Upload gagal', variant: 'destructive' });
+    await fetch(`/api/battles/${id}/matches/${matchId}/result`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resultVideoUrl: url }),
+    });
+    refetch();
+    toast({ title: 'Video hasil dipublikasikan!' });
   };
 
   const setThirdPlace = async (name: string) => {
@@ -226,6 +269,17 @@ function BattleDetailPage({ id }: { id: number }) {
     ? matchesByRound[rounds - 2].map(m => (m.winnerName ? (m.winnerName === m.name1 ? m.name2 : m.name1) : null)).filter(Boolean) as string[]
     : [];
 
+  const half = (arr: Match[], side: 'left' | 'right') => {
+    const mid = Math.ceil(arr.length / 2);
+    return side === 'left' ? arr.slice(0, mid) : arr.slice(mid);
+  };
+  const earlyRounds = matchesByRound.slice(0, rounds - 1);
+
+  const renderMatch = (m: Match) => (
+    <MatchCard key={m.id} match={m} isAdmin={isAdmin} canSubmitVideo={canSubmitVideo}
+      onSetWinner={setWinner} onSubmitVideo={submitVideo} onSetResultVideo={setResultVideo} />
+  );
+
   return (
     <div className="space-y-6 animate-in fade-in">
       <button onClick={() => setLocation('/battle')} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-white">
@@ -237,24 +291,51 @@ function BattleDetailPage({ id }: { id: number }) {
         <p className="text-muted-foreground text-sm mt-0.5">{battle.isTeam ? 'Battle Tim' : 'Battle 1v1'} — {battle.status === 'finished' ? 'Selesai' : 'Berlangsung'}</p>
       </div>
 
-      {/* Bracket */}
+      {/* Bracket — split left/right around a centered final so it doesn't hug the left edge */}
       <div className="glass rounded-2xl p-4 overflow-x-auto">
-        <div className="flex gap-6 items-center min-w-max">
-          {matchesByRound.map((roundMatches, r) => (
-            <div key={r} className="flex flex-col gap-6 justify-around">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">
-                {r === rounds - 1 ? 'Final' : r === rounds - 2 ? 'Semifinal' : `Ronde ${r + 1}`}
-              </p>
-              {roundMatches.map(m => (
-                <MatchCard key={m.id} match={m} isTeam={battle.isTeam} canEdit={isAdmin && !m.winnerName}
-                  onSetWinner={setWinner} onUploadVideo={uploadVideo} />
-              ))}
-            </div>
-          ))}
-          {champion && (
-            <div className="flex flex-col items-center justify-center gap-2 pl-2">
-              <Trophy className="w-10 h-10 text-yellow-400" />
-              <p className="text-sm font-bold text-yellow-300">{champion}</p>
+        <div className="flex gap-3 items-center justify-center min-w-max mx-auto">
+          {earlyRounds.length > 0 ? (
+            <>
+              <div className="flex gap-3">
+                {earlyRounds.map((roundMatches, r) => (
+                  <div key={`l${r}`} className="flex flex-col gap-4 justify-around">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">
+                      {r === rounds - 2 ? 'Semifinal' : `Ronde ${r + 1}`}
+                    </p>
+                    {half(roundMatches, 'left').map(renderMatch)}
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col items-center gap-2 px-2">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Final</p>
+                {finalMatch && renderMatch(finalMatch)}
+                {champion && (
+                  <div className="flex flex-col items-center gap-1 pt-2">
+                    <Trophy className="w-9 h-9 text-yellow-400" />
+                    <p className="text-xs font-bold text-yellow-300">{champion}</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3 flex-row-reverse">
+                {earlyRounds.map((roundMatches, r) => (
+                  <div key={`r${r}`} className="flex flex-col gap-4 justify-around">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">
+                      {r === rounds - 2 ? 'Semifinal' : `Ronde ${r + 1}`}
+                    </p>
+                    {half(roundMatches, 'right').map(renderMatch)}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              {finalMatch && renderMatch(finalMatch)}
+              {champion && (
+                <div className="flex flex-col items-center gap-1 pt-2">
+                  <Trophy className="w-9 h-9 text-yellow-400" />
+                  <p className="text-xs font-bold text-yellow-300">{champion}</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -291,15 +372,20 @@ function BattleDetailPage({ id }: { id: number }) {
         </div>
       )}
 
-      {/* Match video recaps */}
-      {battle.matches.some(m => m.videoUrl) && (
+      {/* Public official result videos — everyone can watch & download these */}
+      {battle.matches.some(m => m.resultVideoUrl) && (
         <div className="glass rounded-2xl p-5">
-          <h3 className="font-bold mb-4">🎥 Video Pertandingan</h3>
+          <h3 className="font-bold mb-4">🎥 Video Hasil Pertandingan</h3>
           <div className="grid gap-4 sm:grid-cols-2">
-            {battle.matches.filter(m => m.videoUrl).map(m => (
+            {battle.matches.filter(m => m.resultVideoUrl).map(m => (
               <div key={m.id}>
-                <video src={m.videoUrl!} controls className="w-full rounded-xl bg-black aspect-video" />
-                <p className="text-xs text-muted-foreground mt-1">{m.name1 || '?'} vs {m.name2 || '?'}</p>
+                <video src={m.resultVideoUrl!} controls className="w-full rounded-xl bg-black aspect-video" />
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-muted-foreground">{m.name1 || '?'} vs {m.name2 || '?'}</p>
+                  <a href={m.resultVideoUrl!} download target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
+                    <Download className="w-3 h-3" /> Unduh
+                  </a>
+                </div>
               </div>
             ))}
           </div>
