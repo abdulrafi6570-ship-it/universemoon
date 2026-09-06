@@ -205,8 +205,10 @@ export default function MepPage() {
             <motion.div key={mep.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="glass rounded-2xl overflow-hidden hover:border-white/20 border border-transparent transition-all">
               <div className="relative group cursor-pointer" onClick={() => setActiveVideo(mep)}>
-                {thumb ? (
+                                {thumb ? (
                   <img src={thumb} alt={mep.title} className="w-full h-48 object-cover" />
+                ) : mep.fileUrl ? (
+                  <video src={`${mep.fileUrl}#t=0.5`} muted preload="metadata" className="w-full h-48 object-cover bg-black" />
                 ) : (
                   <div className="w-full h-48 bg-gradient-to-br from-purple-900/30 to-pink-900/30 flex items-center justify-center">
                     <Video className="w-12 h-12 text-muted-foreground" />
