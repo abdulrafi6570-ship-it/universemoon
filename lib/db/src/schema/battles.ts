@@ -20,7 +20,11 @@ export const battleMatchesTable = pgTable("um_battle_matches", {
   name1: text("name1"),
   name2: text("name2"),
   winnerName: text("winner_name"),
-  videoUrl: text("video_url"),
+  // Raw footage each side submits — visible/downloadable by admin only.
+  submission1Url: text("submission1_url"),
+  submission2Url: text("submission2_url"),
+  // The official recap/preview video an admin uploads afterward — visible to everyone.
+  resultVideoUrl: text("result_video_url"),
 });
 
 export const insertBattleSchema = createInsertSchema(battlesTable).omit({ id: true, createdAt: true });
